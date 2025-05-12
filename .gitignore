@@ -399,3 +399,36 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+## Ignore build artifacts
+bin/
+obj/
+*.user
+*.lock.json
+*.log
+
+## Ignore Rider/VSCode/VisualStudio IDE files
+.idea/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Ignore test results
+TestResults/
+*.coverage
+*.coveragexml
+
+## Ignore NuGet packages
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+## Ignore docs and temp
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
