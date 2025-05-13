@@ -298,7 +298,7 @@ public class MediatorConfiguration()
             throw new InvalidOperationException($"{openBehaviorType.Name} must be an open generic type");
         }
 
-        if (!openBehaviorType.IsAbstract)
+        if (openBehaviorType.IsAbstract)
         {
             throw new InvalidOperationException($"{openBehaviorType.Name} must be an abstract type");
         }
