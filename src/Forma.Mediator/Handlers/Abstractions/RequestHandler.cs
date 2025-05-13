@@ -16,7 +16,7 @@ public abstract class RequestHandler<TResponse>(IServiceProvider ServiceProvider
     /// <param name="message"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public abstract Task<TResponse> Handle(IRequest<TResponse> message,
+    public abstract Task<TResponse> HandleAsync(IRequest<TResponse> message,
         CancellationToken cancellationToken);
 }
 
@@ -32,6 +32,6 @@ public abstract class RequestHandler(IServiceProvider ServiceProvider) : BaseReq
     /// <param name="message">Il messaggio da gestire.</param>
     /// <param name="cancellationToken">Token di cancellazione.</param>
     /// <returns>Un task che rappresenta l'operazione asincrona.</returns>
-    public abstract Task<object?> Handle(IRequest message,
+    public abstract Task<object?> HandleAsync(IRequest message,
         CancellationToken cancellationToken);
 }

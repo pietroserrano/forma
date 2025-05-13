@@ -28,7 +28,7 @@ public class RequestMediator(IServiceProvider ServiceProvider) : IRequestMediato
 
         var handler = (RequestHandler<TResponse>)ServiceProvider.GetRequiredService(wrapperType);
 
-        return handler.Handle(request, cancellationToken);
+        return handler.HandleAsync(request, cancellationToken);
     }
 
     /// <summary>
@@ -47,7 +47,7 @@ public class RequestMediator(IServiceProvider ServiceProvider) : IRequestMediato
 
         var handler = (RequestHandler)ServiceProvider.GetRequiredService(wrapperType);
 
-        return handler.Handle(request, cancellationToken);
+        return handler.HandleAsync(request, cancellationToken);
     }
 
     /// <summary>

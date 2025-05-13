@@ -29,7 +29,7 @@ public class RequestHandlerImpl<TRequest, TResponse> : RequestHandler<TResponse>
     /// <returns></returns>
     public override async Task<object?> Handle(object message,
         CancellationToken cancellationToken) =>
-        await Handle((IRequest<TResponse>)message, cancellationToken);
+        await HandleAsync((IRequest<TResponse>)message, cancellationToken);
 
     /// <summary>
     /// Handles a strongly typed message and returns a response.
@@ -37,7 +37,7 @@ public class RequestHandlerImpl<TRequest, TResponse> : RequestHandler<TResponse>
     /// <param name="message"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public override Task<TResponse> Handle(IRequest<TResponse> message,
+    public override Task<TResponse> HandleAsync(IRequest<TResponse> message,
         CancellationToken cancellationToken)
     {
         Task<TResponse> Handler(CancellationToken ct) =>
@@ -73,7 +73,7 @@ public class RequestHandlerImpl<TRequest> : RequestHandler
     /// <returns>Un task che rappresenta l'operazione asincrona.</returns>
     public override async Task<object?> Handle(object message,
         CancellationToken cancellationToken) =>
-        await Handle((IRequest)message, cancellationToken);
+        await HandleAsync((IRequest)message, cancellationToken);
 
     /// <summary>
     /// Gestisce un messaggio fortemente tipizzato senza risultato specifico.
@@ -81,7 +81,7 @@ public class RequestHandlerImpl<TRequest> : RequestHandler
     /// <param name="request">Il messaggio da gestire.</param>
     /// <param name="cancellationToken">Token di cancellazione.</param>
     /// <returns>Un task che rappresenta l'operazione asincrona.</returns>
-    public override Task<object?> Handle(IRequest request,
+    public override Task<object?> HandleAsync(IRequest request,
         CancellationToken cancellationToken)
     {
         async Task<object?> Handler(CancellationToken ct)
