@@ -8,16 +8,17 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
     <PackageReference Include="MediatR" Version="11.0.0" />
     <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="11.1.0" />
+    <PackageReference Include="Scrutor" Version="4.2.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Forma.Core\Forma.Core.csproj" />
     <ProjectReference Include="..\Forma.Mediator\Forma.Mediator.csproj" />
+    <ProjectReference Include="..\Forma.Decorator\Forma.Decorator.csproj" />
   </ItemGroup>
 
 </Project>
