@@ -15,11 +15,11 @@ namespace Forma.Benchmarks
 {
     /// <summary>
     /// Benchmark di confronto tra Forma.Mediator e MediatR di Jimmy Bogard
-    /// </summary>    [MemoryDiagnoser]
+    /// </summary>
+    [MemoryDiagnoser]
     [Orderer(SummaryOrderPolicy.FastestToSlowest)]
     [RankColumn]
     [GroupBenchmarksBy(BenchmarkLogicalGroupRule.ByCategory)]
-    [CategoriesColumn]
     public class MediatRComparisonBenchmarks
     {
         // Mediator instances
@@ -37,33 +37,32 @@ namespace Forma.Benchmarks
         {
             // ===== Setup per Forma.Mediator =====
             var formaServices = new ServiceCollection();
-
+            
             // Registrazione degli handler
             formaServices.AddTransient<IHandler<FormaSimpleRequest>, FormaSimpleRequestHandler>();
             formaServices.AddTransient<IHandler<FormaRequestWithResponseObj, string>, FormaRequestWithResponseHandler>();
-
+            
             // Configurazione del mediator
             formaServices.AddRequestMediator(config => { });
-
+            
             var formaServiceProvider = formaServices.BuildServiceProvider();
             _formaMediator = formaServiceProvider.GetRequiredService<IRequestMediator>();
-
+            
             _formaRequest = new FormaSimpleRequest { Data = "Test data" };
             _formaResponseRequest = new FormaRequestWithResponseObj { Data = "Test data" };
 
             // ===== Setup per MediatR =====
             var mediatRServices = new ServiceCollection();
-
+            
             // Registrazione MediatR
             mediatRServices.AddMediatR(typeof(MediatRComparisonBenchmarks));
-
+            
             var mediatRServiceProvider = mediatRServices.BuildServiceProvider();
             _mediatRMediator = mediatRServiceProvider.GetRequiredService<MediatR.IMediator>();
-
+            
             _mediatRRequest = new MediatRSimpleRequest { Data = "Test data" };
             _mediatRResponseRequest = new MediatRRequestWithResponseObj { Data = "Test data" };
-        }
-        [Benchmark]
+        }        [Benchmark]
         [BenchmarkCategory("SendAsObject")]
         public async Task Forma_SendAsync_object()
         {
@@ -89,8 +88,7 @@ namespace Forma.Benchmarks
         public async Task MediatR_Send_object()
         {
             await _mediatRMediator.Send((object)_mediatRRequest);
-        }
-        [Benchmark]
+        }        [Benchmark]
         [BenchmarkCategory("SimpleRequest")]
         public async Task MediatR_SimpleRequest()
         {
