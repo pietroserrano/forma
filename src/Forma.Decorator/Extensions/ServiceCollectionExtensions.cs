@@ -1,4 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Collections.Concurrent;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace Forma.Decorator.Extensions;
 
@@ -7,6 +12,10 @@ namespace Forma.Decorator.Extensions;
 /// </summary>
 public static class ServiceCollectionExtensions
 {
+    // Cache per i costruttori dei decoratori
+    private static readonly ConcurrentDictionary<(Type service, Type decorator), (ConstructorInfo ctor, int paramIndex)> _ctorCache = 
+        new ConcurrentDictionary<(Type service, Type decorator), (ConstructorInfo ctor, int paramIndex)>();
+    
     /// <summary>
     /// Decorate un servizio con uno o più decoratori
     /// </summary>
@@ -23,34 +32,50 @@ public static class ServiceCollectionExtensions
         if (decorators == null || decorators.Length == 0)
             throw new ArgumentException("Almeno un decoratore è richiesto.");
 
-        foreach (var decorator in decorators)
+        Type serviceType = typeof(TService);
+        for (int i = 0; i < decorators.Length; i++)
         {
-            services.Decorate(typeof(TService), decorator);
+            services.Decorate(serviceType, decorators[i]);
         }
 
         return services;
     }
 
     /// <summary>
-    /// Controlla se il decoratore è valido per il tipo di servizio
+    /// Controlla se il decoratore è valido per il tipo di servizio e restituisce le informazioni sul costruttore
     /// </summary>
     /// <param name="serviceType"></param>
     /// <param name="decoratorType"></param>
+    /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    private static void EnsureValidDecorator(Type serviceType, Type decoratorType)
+    private static (ConstructorInfo ctor, int paramIndex) EnsureValidDecorator(Type serviceType, Type decoratorType)
     {
-        var ctor = decoratorType
-            .GetConstructors()
-            .FirstOrDefault(c => c.GetParameters().Any(p => serviceType.IsAssignableFrom(p.ParameterType)));
-
-        if (ctor == null)
+        // Verifica se la combinazione è già presente nella cache
+        if (_ctorCache.TryGetValue((serviceType, decoratorType), out var cached))
+            return cached;
+            
+        // Cerca il costruttore adatto
+        var constructors = decoratorType.GetConstructors();
+        for (int i = 0; i < constructors.Length; i++)
         {
-            throw new InvalidOperationException(
-                $"Il decoratore {decoratorType.Name} deve avere un costruttore con almeno un parametro assegnabile a {serviceType.Name}.");
+            var ctor = constructors[i];
+            var parameters = ctor.GetParameters();
+            
+            for (int j = 0; j < parameters.Length; j++)
+            {
+                if (serviceType.IsAssignableFrom(parameters[j].ParameterType))
+                {
+                    var result = (ctor, j);
+                    // Memorizza nella cache
+                    _ctorCache[(serviceType, decoratorType)] = result;
+                    return result;
+                }
+            }
         }
-    }
 
-    /// <summary>
+        throw new InvalidOperationException(
+            $"Il decoratore {decoratorType.Name} deve avere un costruttore con almeno un parametro assegnabile a {serviceType.Name}.");
+    }    /// <summary>
     /// Decorate un servizio con un decoratore specifico
     /// </summary>
     /// <param name="services"></param>
@@ -63,18 +88,29 @@ public static class ServiceCollectionExtensions
         Type serviceType,
         Type decoratorType)
     {
-        EnsureValidDecorator(serviceType, decoratorType);
-
+        // Ottieni le informazioni sul costruttore e sull'indice del parametro
+        var (ctor, paramIndex) = EnsureValidDecorator(serviceType, decoratorType);
+        
         // Trova l'ultimo descriptor registrato per il tipo di servizio
-        var descriptor = services.LastOrDefault(d => d.ServiceType == serviceType);
+        // Ottimizzazione: cerca dall'ultimo elemento in poi per migliorare la performance
+        ServiceDescriptor? descriptor = null;
+        for (int i = services.Count - 1; i >= 0; i--)
+        {
+            if (services[i].ServiceType == serviceType)
+            {
+                descriptor = services[i];
+                break;
+            }
+        }
+
         if (descriptor == null)
             throw new InvalidOperationException($"Servizio {serviceType} non registrato.");
 
         // Rimuovi la registrazione originale
         services.Remove(descriptor);
 
-        // Genera una chiave univoca per il servizio originale
-        var serviceKey = Guid.NewGuid();
+        // Genera una chiave univoca per il servizio originale (più efficiente di Guid.NewGuid)
+        var serviceKey = RuntimeHelpers.GetHashCode(descriptor);
 
         // Registra il servizio originale con la chiave
         if (descriptor.ImplementationInstance != null)
@@ -112,15 +148,32 @@ public static class ServiceCollectionExtensions
                 // Ottieni l'istanza del servizio originale tramite la chiave
                 var inner = sp.GetRequiredKeyedService(serviceType, serviceKey);
 
-                // Crea il decoratore passandogli l'istanza del servizio originale
-                return ActivatorUtilities.CreateInstance(sp, decoratorType, inner);
+                // return ActivatorUtilities.CreateInstance(sp, decoratorType, inner);                
+                // Factory ottimizzata per la creazione dell'istanza del decoratore
+                var ctorParams = ctor.GetParameters();
+                var parameters = new object[ctorParams.Length];
+                parameters[paramIndex] = inner;
+                  // Ottieni gli altri parametri dal container se necessario
+                for (int i = 0; i < parameters.Length; i++)
+                {
+                    if (i == paramIndex) continue;
+                    var paramType = ctorParams[i].ParameterType;
+                    var service = sp.GetService(paramType);
+                    if (service != null)
+                        parameters[i] = service;
+                    else if (ctorParams[i].HasDefaultValue)
+                        parameters[i] = ctorParams[i].DefaultValue!;
+                    else if (paramType.IsValueType)
+                        parameters[i] = Activator.CreateInstance(paramType)!;
+                }
+                
+                // Crea direttamente l'istanza usando Invoke che è più veloce di ActivatorUtilities
+                return ctor.Invoke(parameters);
             },
             descriptor.Lifetime));
 
         return services;
-    }
-
-    /// <summary>
+    }    /// <summary>
     /// Decorate un servizio con un decoratore specifico
     /// </summary>
     /// <typeparam name="TService"></typeparam>
@@ -132,6 +185,9 @@ public static class ServiceCollectionExtensions
         where TService : class
         where TDecorator : class, TService
     {
-        return services.Decorate(typeof(TService), typeof(TDecorator));
+        // Chiamata diretta senza usare typeof per migliorare le prestazioni
+        Type serviceType = typeof(TService);
+        Type decoratorType = typeof(TDecorator);
+        return services.Decorate(serviceType, decoratorType);
     }
 }
