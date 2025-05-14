@@ -162,8 +162,12 @@ public class DependencyInjectionTests
         var services = new ServiceCollection();
 
         // Act & Assert
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+
         var exception = Assert.Throws<ArgumentNullException>(() =>
             services.AddRequestMediator(null));
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+
 
         Assert.Equal("configuration", exception.ParamName);
     }
@@ -175,8 +179,12 @@ public class DependencyInjectionTests
         var services = new ServiceCollection();
 
         // Act & Assert
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
+
         var exception = Assert.Throws<ArgumentNullException>(() =>
             Forma.Mediator.Extensions.DepenencyInjection.AddRequestMediator(null, null));
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+
 
         Assert.Equal("services", exception.ParamName);
     }

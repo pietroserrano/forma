@@ -20,7 +20,9 @@ public class DecorateFixtures
 
         // Assert
         Assert.IsType<TestDecorator>(service);
-        Assert.IsType<MyService>((service as TestDecorator).Inner);
+        var testDecorator = service as TestDecorator;
+        Assert.NotNull(testDecorator);
+        Assert.IsType<MyService>(testDecorator.Inner);
     }
 
     // Test che verifica la catena di decorazione
@@ -41,8 +43,10 @@ public class DecorateFixtures
         // Assert - verifica che OuterDecorator contenga InnerDecorator che contenga MyService
         Assert.IsType<OuterDecorator>(service);
         var outerDecorator = service as OuterDecorator;
+        Assert.NotNull(outerDecorator);
         Assert.IsType<InnerDecorator>(outerDecorator.Inner);
         var innerDecorator = outerDecorator.Inner as InnerDecorator;
+        Assert.NotNull(innerDecorator);
         Assert.IsType<MyService>(innerDecorator.Inner);
     }
 
@@ -82,8 +86,11 @@ public class DecorateFixtures
         // Assert
         Assert.IsType<TestDecorator>(service);
         var testDecorator = service as TestDecorator;
+        Assert.NotNull(testDecorator);
+        var innerTestDecorator = testDecorator.Inner as MyService;
         Assert.IsType<MyService>(testDecorator.Inner);
-        Assert.Equal("Factory-Created", (testDecorator.Inner as MyService).Name);
+        Assert.NotNull(innerTestDecorator);
+        Assert.Equal("Factory-Created", innerTestDecorator.Name);
     }
 
     // Test con registrazione di istanza
@@ -103,6 +110,7 @@ public class DecorateFixtures
         // Assert
         Assert.IsType<TestDecorator>(service);
         var testDecorator = service as TestDecorator;
+        Assert.NotNull(testDecorator);
         Assert.Same(instance, testDecorator.Inner);
     }
 
@@ -122,6 +130,7 @@ public class DecorateFixtures
         // Assert
         Assert.IsType<GenericDecorator<string>>(service);
         var decorator = service as GenericDecorator<string>;
+        Assert.NotNull(decorator);
         Assert.IsType<GenericService<string>>(decorator.Inner);
     }
 
@@ -142,8 +151,10 @@ public class DecorateFixtures
         // Assert - verifica che la catena sia corretta
         Assert.IsType<GenericLoggingDecorator<int>>(service);
         var outerDecorator = service as GenericLoggingDecorator<int>;
+        Assert.NotNull(outerDecorator);
         Assert.IsType<GenericDecorator<int>>(outerDecorator.Inner);
         var innerDecorator = outerDecorator.Inner as GenericDecorator<int>;
+        Assert.NotNull(innerDecorator);
         Assert.IsType<GenericService<int>>(innerDecorator.Inner);
 
         // Verifica che il servizio funzioni
@@ -285,7 +296,7 @@ public class GenericLoggingDecorator<T> : IGenericService<T>
 public class TestEntity
 {
     public int Id { get; set; }
-    public string Name { get; set; }
+    public string Name { get; set; } = null!;
 }
 
 public interface IConstrainedGenericService<T> where T : class

@@ -61,7 +61,7 @@ public class MediatorIntegrationTests
             async () => await mediator.SendAsync(new TrackingRequest()));
 
         Assert.Equal("PreProcessor failed", exception.Message);
-        Assert.Equal(1, executionTracker.Steps.Count);
+        Assert.Single(executionTracker.Steps);
         Assert.Equal("FailingPreProcessor", executionTracker.Steps[0]);
     }
 
@@ -86,7 +86,7 @@ public class MediatorIntegrationTests
             async () => await mediator.SendAsync(new FailingRequest()));
 
         Assert.Equal("Handler failed", exception.Message);
-        Assert.Equal(1, executionTracker.Steps.Count);
+        Assert.Single(executionTracker.Steps);
         Assert.Equal("FailingHandler", executionTracker.Steps[0]);
     }
 

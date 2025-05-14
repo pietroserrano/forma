@@ -84,9 +84,15 @@ public class RequestMediatorTests
     public async Task SendAsync_WithNullRequest_ThrowsArgumentNullException()
     {
         // Act & Assert
+#pragma warning disable CS8625 // Cannot convert null literal to non-nullable reference type.
         await Assert.ThrowsAsync<ArgumentNullException>(() => _mediator.SendAsync<TestResponse>(null));
+#pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
+#pragma warning disable CS8631 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match constraint type.
         await Assert.ThrowsAsync<ArgumentNullException>(() => _mediator.SendAsync(null as SimpleRequest));
+#pragma warning restore CS8631 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match constraint type.
+#pragma warning disable CS8604 // Possible null reference argument.
         await Assert.ThrowsAsync<ArgumentNullException>(() => _mediator.SendAsync(null as object));
+#pragma warning restore CS8604 // Possible null reference argument.
     }
 
     [Fact]
