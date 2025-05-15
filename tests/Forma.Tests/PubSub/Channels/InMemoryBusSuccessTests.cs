@@ -13,21 +13,21 @@ namespace Forma.Tests.PubSub.Channels;
 /// </summary>
 public class InMemoryBusSuccessTests
 {    /// <summary>
-    /// Test event
-    /// </summary>
+     /// Test event
+     /// </summary>
     private class TestEvent : IEvent
     {
         public string Message { get; set; } = "Test";
         public int Value { get; set; } = 42;
     }    /// <summary>
-    /// Another event type to test multiple consumers
-    /// </summary>
+         /// Another event type to test multiple consumers
+         /// </summary>
     private class AnotherTestEvent : IEvent
     {
         public string Data { get; set; } = "Another";
     }    /// <summary>
-    /// Test consumer that records received events
-    /// </summary>
+         /// Test consumer that records received events
+         /// </summary>
     private class TestConsumer : IConsume<TestEvent>
     {
         public List<TestEvent> ReceivedEvents { get; } = new();
@@ -38,8 +38,8 @@ public class InMemoryBusSuccessTests
             return Task.CompletedTask;
         }
     }    /// <summary>
-    /// Test consumer for the second event type
-    /// </summary>
+         /// Test consumer for the second event type
+         /// </summary>
     private class AnotherTestConsumer : IConsume<AnotherTestEvent>
     {
         public List<AnotherTestEvent> ReceivedEvents { get; } = new();
@@ -52,12 +52,13 @@ public class InMemoryBusSuccessTests
     }
 
     [Fact]
-    public async Task AddFormaPubSubInMemory_RegistersComponents()
-    {        // Arrange
+    public void AddFormaPubSubInMemory_RegistersComponents()
+    {
+        // Arrange
         var services = new ServiceCollection();
         var assembly = typeof(TestConsumer).Assembly;        // Add logging services
         services.AddLogging(configure => configure.AddConsole());
-        
+
         // Act
         services.AddFormaPubSubInMemory(assembly);
         var provider = services.BuildServiceProvider();
@@ -68,7 +69,8 @@ public class InMemoryBusSuccessTests
         Assert.IsType<InMemoryBusImpl>(bus);
     }
 
-    [Fact]    public async Task PublishAsync_WithConsumer_ConsumerReceivesEvent()
+    [Fact]
+    public async Task PublishAsync_WithConsumer_ConsumerReceivesEvent()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -79,7 +81,7 @@ public class InMemoryBusSuccessTests
         // Aggiungi il bus e il logging
         services.AddLogging(configure => configure.AddConsole());
         services.AddFormaPubSubInMemory(assembly);
-        
+
         var provider = services.BuildServiceProvider();
         var bus = provider.GetRequiredService<IBus>();        // Start the bus manually (in a real app it would be managed by the host)
         if (bus is InMemoryBusImpl busImpl)
@@ -117,7 +119,7 @@ public class InMemoryBusSuccessTests
         // Aggiungi il bus e il logging
         services.AddLogging(configure => configure.AddConsole());
         services.AddFormaPubSubInMemory(assembly);
-        
+
         var provider = services.BuildServiceProvider();
         var bus = provider.GetRequiredService<IBus>();
 
@@ -169,11 +171,11 @@ public class InMemoryBusSuccessTests
         var consumer2 = new TestConsumer();
         services.AddSingleton<IConsume<TestEvent>>(consumer1);
         services.AddSingleton<IConsume<TestEvent>>(consumer2);
-        
+
         // Aggiungi il bus e il logging
         services.AddLogging(configure => configure.AddConsole());
         services.AddFormaPubSubInMemory(assembly);
-        
+
         var provider = services.BuildServiceProvider();
         var bus = provider.GetRequiredService<IBus>();
 
@@ -194,7 +196,7 @@ public class InMemoryBusSuccessTests
         Assert.Single(consumer1.ReceivedEvents);
         Assert.Equal("Broadcast", consumer1.ReceivedEvents[0].Message);
         Assert.Equal(999, consumer1.ReceivedEvents[0].Value);
-        
+
         Assert.Single(consumer2.ReceivedEvents);
         Assert.Equal("Broadcast", consumer2.ReceivedEvents[0].Message);
         Assert.Equal(999, consumer2.ReceivedEvents[0].Value);
@@ -216,11 +218,11 @@ public class InMemoryBusSuccessTests
         var anotherConsumer = new AnotherTestConsumer();
         services.AddSingleton<IConsume<TestEvent>>(testConsumer);
         services.AddSingleton<IConsume<AnotherTestEvent>>(anotherConsumer);
-        
+
         // Aggiungi il bus e il logging
         services.AddLogging(configure => configure.AddConsole());
         services.AddFormaPubSubInMemory(assembly);
-        
+
         var provider = services.BuildServiceProvider();
         var bus = provider.GetRequiredService<IBus>();
 
@@ -233,7 +235,7 @@ public class InMemoryBusSuccessTests
         // Act
         var testEvent = new TestEvent { Message = "Type 1", Value = 1 };
         var anotherEvent = new AnotherTestEvent { Data = "Type 2" };
-        
+
         await bus.PublishAsync(testEvent);
         await bus.PublishAsync(anotherEvent);
 
@@ -243,7 +245,7 @@ public class InMemoryBusSuccessTests
         // Assert
         Assert.Single(testConsumer.ReceivedEvents);
         Assert.Equal("Type 1", testConsumer.ReceivedEvents[0].Message);
-        
+
         Assert.Single(anotherConsumer.ReceivedEvents);
         Assert.Equal("Type 2", anotherConsumer.ReceivedEvents[0].Data);
 
