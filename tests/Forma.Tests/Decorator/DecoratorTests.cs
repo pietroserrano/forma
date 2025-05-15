@@ -4,8 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Forma.Tests.Decorator;
 
 public class DecorateFixtures
-{        
-    // Test base: verifica che il decoratore venga applicato correttamente
+{          // Base test: verifies that the decorator is applied correctly
     [Fact]
     public void DecorateWithKeyed_AppliesDecorator()
     {
@@ -23,24 +22,20 @@ public class DecorateFixtures
         var testDecorator = service as TestDecorator;
         Assert.NotNull(testDecorator);
         Assert.IsType<MyService>(testDecorator.Inner);
-    }
-
-    // Test che verifica la catena di decorazione
+    }    // Test that verifies the decoration chain
     [Fact]
     public void DecorateWithKeyed_MultipleDecorators_AppliesInCorrectOrder()
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddTransient<IMyService, MyService>();
-
-        // Act - con l'implementazione attuale, l'ultimo decoratore applicato diventa quello più esterno
-        // Quindi per ottenere OuterDecorator -> InnerDecorator -> MyService, applichiamo prima InnerDecorator e poi OuterDecorator
+        services.AddTransient<IMyService, MyService>();        // Act - with the current implementation, the last decorator applied becomes the outermost one
+        // So to get OuterDecorator -> InnerDecorator -> MyService, we apply InnerDecorator first and then OuterDecorator
         services.Decorate<IMyService, InnerDecorator>();
         services.Decorate<IMyService, OuterDecorator>();
         var provider = services.BuildServiceProvider();
         var service = provider.GetRequiredService<IMyService>();
 
-        // Assert - verifica che OuterDecorator contenga InnerDecorator che contenga MyService
+        // Assert - verify that OuterDecorator contains InnerDecorator which contains MyService
         Assert.IsType<OuterDecorator>(service);
         var outerDecorator = service as OuterDecorator;
         Assert.NotNull(outerDecorator);
@@ -67,7 +62,7 @@ public class DecorateFixtures
         var service2 = provider.GetRequiredService<IMyService>();
 
         // Assert
-        Assert.Same(service1, service2); // Verifica che sia lo stesso oggetto (singleton)
+        Assert.Same(service1, service2); // Verify it's the same object (singleton)
     }
 
     // Test con registrazione tramite factory
