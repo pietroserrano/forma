@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>Forma.Chains</id>
+    <version>1.0.0</version>
+    <authors>Forma Team</authors>
+    <owners>Forma Team</owners>
+    <description>Chain of Responsibility pattern implementation for .NET with DI support</description>
+    <tags>Chain Responsibility Pattern Microsoft Extensions DependencyInjection ChainOfResponsibility</tags>
+    <dependencies>
+      <group targetFramework="net9.0">
+        <dependency id="Microsoft.Extensions.DependencyInjection" version="9.0.4" />
+        <dependency id="Forma.Core" version="1.0.0" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

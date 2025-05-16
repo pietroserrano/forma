@@ -1,0 +1,235 @@
+using Forma.Chains.Abstractions;
+using Forma.Chains.Extensions;
+using Forma.Chains.Implementations;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Forma.Tests.Chains;
+
+public class ChainTests
+{
+    [Fact]
+    public async Task BasicChain_ShouldHandleRequest()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        
+        // Registrazione dei servizi
+        services.AddTransient<FirstHandler>();
+        services.AddTransient<SecondHandler>();
+        services.AddTransient<ThirdHandler>();
+        
+        // Registrazione della catena
+        services.AddChain<TestRequest>(typeof(FirstHandler), typeof(SecondHandler), typeof(ThirdHandler));
+
+        var provider = services.BuildServiceProvider();
+        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        
+        var request = new TestRequest { Value = 10 };
+        var results = new List<string>();
+        request.Results = results;
+        
+        // Act
+        await chain.HandleAsync(request);
+        
+        // Assert
+        Assert.Equal(3, results.Count);
+        Assert.Equal("FirstHandler", results[0]);
+        Assert.Equal("SecondHandler", results[1]);
+        Assert.Equal("ThirdHandler", results[2]);
+    }
+    
+    [Fact]
+    public async Task ChainWithResponse_ShouldHandleRequestCorrectly()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        
+        // Registrazione dei servizi
+        services.AddTransient<FirstResponseHandler>();
+        services.AddTransient<SecondResponseHandler>();
+        services.AddTransient<ThirdResponseHandler>();
+        
+        // Registrazione della catena
+        services.AddChain<TestRequest, TestResponse>(typeof(FirstResponseHandler), typeof(SecondResponseHandler), typeof(ThirdResponseHandler));
+        
+        var provider = services.BuildServiceProvider();
+        var chain = provider.GetRequiredService<IChainHandler<TestRequest, TestResponse>>();
+        
+        var request = new TestRequest { Value = 15 };
+        
+        // Act
+        var response = await chain.HandleAsync(request);
+        
+        // Assert
+        Assert.Equal("SecondHandler: 15", response.Result);
+    }
+    
+    [Fact]
+    public async Task ConditionalChain_ShouldHandleRequestBasedOnCondition()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        
+        // Registrazione dei servizi
+        services.AddTransient<ConditionalHandlerLessThan10>();
+        services.AddTransient<ConditionalHandlerBetween10And20>();
+        services.AddTransient<ConditionalHandlerGreaterThan20>();
+        
+        // Registrazione della catena
+        services.AddChain<TestRequest, TestResponse>(
+            typeof(ConditionalHandlerLessThan10),
+            typeof(ConditionalHandlerBetween10And20),
+            typeof(ConditionalHandlerGreaterThan20)
+        );
+        
+        var provider = services.BuildServiceProvider();
+        var chain = provider.GetRequiredService<IChainHandler<TestRequest, TestResponse>>();
+        
+        // Act & Assert - Value less than 10
+        var response1 = await chain.HandleAsync(new TestRequest { Value = 5 });
+        Assert.Equal("LessThan10: 5", response1.Result);
+        
+        // Act & Assert - Value between 10 and 20
+        var response2 = await chain.HandleAsync(new TestRequest { Value = 15 });
+        Assert.Equal("Between10And20: 15", response2.Result);
+        
+        // Act & Assert - Value greater than 20
+        var response3 = await chain.HandleAsync(new TestRequest { Value = 25 });
+        Assert.Equal("GreaterThan20: 25", response3.Result);
+    }
+}
+
+// Classi di supporto per i test
+public class TestRequest
+{
+    public int Value { get; set; }
+    public List<string>? Results { get; set; }
+}
+
+public class TestResponse
+{
+    public string? Result { get; set; }
+}
+
+// Handler per il test base
+public class FirstHandler : ChainHandlerBase<TestRequest>
+{
+    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(true);
+    }
+    
+    protected override Task ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        request.Results?.Add("FirstHandler");
+        return NextAsync(request, cancellationToken);
+    }
+}
+
+public class SecondHandler : ChainHandlerBase<TestRequest>
+{
+    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(true);
+    }
+    
+    protected override Task ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        request.Results?.Add("SecondHandler");
+        return NextAsync(request, cancellationToken);
+    }
+}
+
+public class ThirdHandler : ChainHandlerBase<TestRequest>
+{
+    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(true);
+    }
+    
+    protected override Task ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        request.Results?.Add("ThirdHandler");
+        return Task.CompletedTask;
+    }
+}
+
+// Handler per il test con response
+public class FirstResponseHandler : ChainHandlerBase<TestRequest, TestResponse>
+{
+    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(request.Value < 10);
+    }
+    
+    protected override Task<TestResponse> ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new TestResponse { Result = $"FirstHandler: {request.Value}" });
+    }
+}
+
+public class SecondResponseHandler : ChainHandlerBase<TestRequest, TestResponse>
+{
+    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(request.Value >= 10 && request.Value <= 20);
+    }
+    
+    protected override Task<TestResponse> ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new TestResponse { Result = $"SecondHandler: {request.Value}" });
+    }
+}
+
+public class ThirdResponseHandler : ChainHandlerBase<TestRequest, TestResponse>
+{
+    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(request.Value > 20);
+    }
+    
+    protected override Task<TestResponse> ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new TestResponse { Result = $"ThirdHandler: {request.Value}" });
+    }
+}
+
+// Handler per il test condizionale
+public class ConditionalHandlerLessThan10 : ChainHandlerBase<TestRequest, TestResponse>
+{
+    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(request.Value < 10);
+    }
+    
+    protected override Task<TestResponse> ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new TestResponse { Result = $"LessThan10: {request.Value}" });
+    }
+}
+
+public class ConditionalHandlerBetween10And20 : ChainHandlerBase<TestRequest, TestResponse>
+{
+    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(request.Value >= 10 && request.Value <= 20);
+    }
+    
+    protected override Task<TestResponse> ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new TestResponse { Result = $"Between10And20: {request.Value}" });
+    }
+}
+
+public class ConditionalHandlerGreaterThan20 : ChainHandlerBase<TestRequest, TestResponse>
+{
+    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(request.Value > 20);
+    }
+    
+    protected override Task<TestResponse> ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new TestResponse { Result = $"GreaterThan20: {request.Value}" });
+    }
+}

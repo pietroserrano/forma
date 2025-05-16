@@ -25,6 +25,7 @@
 		<ProjectReference Include="..\..\src\Forma.Mediator\Forma.Mediator.csproj" />
 		<ProjectReference Include="..\..\src\Forma.Decorator\Forma.Decorator.csproj" />
 		<ProjectReference Include="..\..\src\Forma.PubSub.InMemory\Forma.PubSub.InMemory.csproj" />
+		<ProjectReference Include="..\..\src\Forma.Chains\Forma.Chains.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
