@@ -99,60 +99,60 @@ public class ChainTests
     }
 }
 
-// Classi di supporto per i test
-public class TestRequest
-{
-    public int Value { get; set; }
-    public List<string>? Results { get; set; }
-}
+// // Classi di supporto per i test
+// public class TestRequest
+// {
+//     public int Value { get; set; }
+//     public List<string>? Results { get; set; }
+// }
 
-public class TestResponse
-{
-    public string? Result { get; set; }
-}
+// public class TestResponse
+// {
+//     public string? Result { get; set; }
+// }
 
 // Handler per il test base
-public class FirstHandler : IChainHandler<TestRequest>
-{
-    public Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(true);
-    }
+// public class FirstHandler : IChainHandler<TestRequest>
+// {
+//     public Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+//     {
+//         return Task.FromResult(true);
+//     }
 
-    public Task HandleAsync(TestRequest request, Func<CancellationToken, Task> next, CancellationToken cancellationToken = default)
-    {
-        request.Results?.Add("FirstHandler");
-        return next(cancellationToken);
-    }
-}
+//     public Task HandleAsync(TestRequest request, Func<CancellationToken, Task> next, CancellationToken cancellationToken = default)
+//     {
+//         request.Results?.Add("FirstHandler");
+//         return next(cancellationToken);
+//     }
+// }
 
-public class SecondHandler : IChainHandler<TestRequest>
-{
-    public Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(true);
-    }
+// public class SecondHandler : IChainHandler<TestRequest>
+// {
+//     public Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+//     {
+//         return Task.FromResult(true);
+//     }
     
-    public Task HandleAsync(TestRequest request, Func<CancellationToken, Task> next, CancellationToken cancellationToken = default)
-    {
-        request.Results?.Add("SecondHandler");
-        return next(cancellationToken);
-    }
-}
+//     public Task HandleAsync(TestRequest request, Func<CancellationToken, Task> next, CancellationToken cancellationToken = default)
+//     {
+//         request.Results?.Add("SecondHandler");
+//         return next(cancellationToken);
+//     }
+// }
 
-public class ThirdHandler : IChainHandler<TestRequest>
-{
-    public Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(true);
-    }
+// public class ThirdHandler : IChainHandler<TestRequest>
+// {
+//     public Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+//     {
+//         return Task.FromResult(true);
+//     }
 
-    public Task HandleAsync(TestRequest request, Func<CancellationToken, Task> next, CancellationToken cancellationToken = default)
-    {
-        request.Results?.Add("ThirdHandler");
-        return next(cancellationToken);
-    }
-}
+//     public Task HandleAsync(TestRequest request, Func<CancellationToken, Task> next, CancellationToken cancellationToken = default)
+//     {
+//         request.Results?.Add("ThirdHandler");
+//         return next(cancellationToken);
+//     }
+// }
 
 // Handler per il test con response
 public class FirstResponseHandler : IChainHandler<TestRequest, TestResponse>

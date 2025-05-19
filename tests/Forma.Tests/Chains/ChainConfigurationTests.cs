@@ -51,7 +51,8 @@ public class ChainConfigurationTests
         var provider = services.BuildServiceProvider();
         var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
 
-        var request = new TestRequest { Value = 10 };
+        var request = new TestRequest();
+        request.Value = 10;
         var results = new List<string>();
         request.Results = results;
 
