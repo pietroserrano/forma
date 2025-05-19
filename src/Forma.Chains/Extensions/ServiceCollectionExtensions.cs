@@ -81,8 +81,7 @@ public static class ServiceCollectionExtensions
                 ServiceLifetime.Transient,
                 (t) => (typeFilter == null || typeFilter(t)) && 
                     t.BaseType != null &&
-                    t.BaseType.IsGenericType &&
-                    t.BaseType.GetGenericTypeDefinition() == typeof(ChainHandlerBase<>),
+                    t.BaseType.IsGenericType,
                 assemblies);
         }
         else
@@ -115,19 +114,19 @@ public static class ServiceCollectionExtensions
     {
         configuration ??= new ChainConfiguration();
         
-        // Registra gli handler
-        services.RegisterHandlers(handlerTypes, configuration);
-
         // Ordina i tipi di handler se necessario
         if (handlerTypes != null && configuration.OrderStrategy != ChainOrderStrategy.AsProvided)
         {
             handlerTypes = ChainHelpers.OrderHandlerTypes(handlerTypes, configuration.OrderStrategy).ToArray();
         }
 
+        // Registra gli handler
+        services.RegisterHandlers(handlerTypes, configuration);
+
         // Registra il ChainBuilder
         var builderService = ServiceDescriptor.Describe(
             typeof(IChainBuilder<TRequest>),
-            sp => new ExtendedChainBuilder<TRequest>(
+            sp => new ChainBuilder<TRequest>(
                 sp, 
                 handlerTypes ?? [], 
                 configuration),
@@ -170,7 +169,7 @@ public static class ServiceCollectionExtensions
         // Registra il ChainBuilder
         var builderService = ServiceDescriptor.Describe(
             typeof(IChainBuilder<TRequest, TResponse>),
-            sp => new ExtendedChainBuilder<TRequest, TResponse>(
+            sp => new ChainBuilder<TRequest, TResponse>(
                 sp, 
                 handlerTypes ?? [], 
                 configuration),

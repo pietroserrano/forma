@@ -1,3 +1,4 @@
+using System.Reflection;
 using Forma.Chains.Abstractions;
 using Forma.Chains.Configurations;
 
@@ -19,6 +20,7 @@ internal static class ChainHelpers
         return orderStrategy switch
         {
             ChainOrderStrategy.Alphabetical => handlerTypes.OrderBy(t => t.Name),
+            ChainOrderStrategy.ReverseAlphabetical => handlerTypes.OrderByDescending(t => t.Name),
             ChainOrderStrategy.Priority => OrderByPriority(handlerTypes),
             _ => handlerTypes // ChainOrderStrategy.AsProvided
         };
@@ -31,123 +33,79 @@ internal static class ChainHelpers
     /// <returns>I tipi di handler ordinati per priorità.</returns>
     private static IEnumerable<Type> OrderByPriority(IEnumerable<Type> handlerTypes)
     {
-        // Per ora implementiamo un ordinamento semplice basato sul nome
-        // In futuro si potrà implementare un ordinamento basato su un attributo di priorità
-        return handlerTypes.OrderBy(t => t.Name);
-    }    /// <summary>
+        var withPriority = handlerTypes
+            .Select(t => new { Type = t, Attr = t.GetCustomAttribute<ChainPriorityAttribute>() })
+            .Where(x => x.Attr != null)
+            .OrderBy(x => x.Attr!.Priority)
+            .Select(x => x.Type);
+
+        var withoutPriority = handlerTypes
+            .Where(t => t.GetCustomAttribute<ChainPriorityAttribute>() == null)
+            .OrderBy(t => t.Name);
+
+        return withPriority.Concat(withoutPriority);
+    }
+
+    /// <summary>
     /// Gestisce il caso in cui non vengono trovati handler.
     /// </summary>
-    /// <typeparam name="THandler">Il tipo di handler.</typeparam>
+    /// <typeparam name="TRequest">Il tipo di richiesta.</typeparam>
+    /// <typeparam name="TResponse">Il tipo di risposta.</typeparam>
     /// <param name="behavior">Il comportamento da adottare.</param>
     /// <param name="requestType">Il tipo di richiesta.</param>
     /// <returns>Una lista di handler o lancia un'eccezione.</returns>
     /// <exception cref="InvalidOperationException">Lanciata se il comportamento è ThrowException.</exception>
-    public static List<THandler> HandleMissingHandlers<THandler>(MissingHandlerBehavior behavior, Type requestType)
+    public static List<IChainHandler<TRequest, TResponse>> HandleMissingHandlers<TRequest, TResponse>(MissingHandlerBehavior behavior, Type requestType)
+        where TRequest : notnull
     {
         return behavior switch
         {
-            MissingHandlerBehavior.ReturnEmpty => CreateEmptyHandler<THandler>(requestType),
-            MissingHandlerBehavior.UseDefaultHandler => CreateDefaultHandler<THandler>(requestType),
+            MissingHandlerBehavior.ReturnEmpty => [new EmptyChainHandler<TRequest, TResponse>()],
+            MissingHandlerBehavior.UseDefaultHandler => CreateDefaultHandler<TRequest, TResponse>(requestType),
             _ => throw new InvalidOperationException($"Non sono stati trovati handler per il tipo di richiesta {requestType.Name}.")
         };
     }
-    
-    /// <summary>
-    /// Crea un handler vuoto.
-    /// </summary>
-    /// <typeparam name="THandler">Il tipo di handler.</typeparam>
-    /// <param name="requestType">Il tipo di richiesta.</param>
-    /// <returns>Una lista contenente un handler vuoto.</returns>
-    private static List<THandler> CreateEmptyHandler<THandler>(Type requestType)
+
+    public static List<IChainHandler<TRequest>> HandleMissingHandlers<TRequest>(MissingHandlerBehavior behavior, Type requestType)
+        where TRequest : notnull
     {
-        if (typeof(THandler).IsGenericType)
+        return behavior switch
         {
-            var typeArgs = typeof(THandler).GetGenericArguments();
-            if (typeArgs.Length == 1)
-            {
-                // Handler senza risposta
-                var handlerType = typeof(EmptyHandler<>).MakeGenericType(typeArgs[0]);
-                var handler = Activator.CreateInstance(handlerType);
-                return new List<THandler> { (THandler)handler! };
-            }
-            else if (typeArgs.Length == 2)
-            {
-                // Handler con risposta
-                var handlerType = typeof(EmptyHandler<,>).MakeGenericType(typeArgs[0], typeArgs[1]);
-                var handler = Activator.CreateInstance(handlerType);
-                return new List<THandler> { (THandler)handler! };
-            }
-        }
-        
-        // Fallback: restituisci una lista vuota
-        return new List<THandler>();
+            MissingHandlerBehavior.ReturnEmpty => [new EmptyChainHandler<TRequest>()],
+            MissingHandlerBehavior.UseDefaultHandler => CreateDefaultHandler<TRequest>(requestType),
+            _ => throw new InvalidOperationException($"Non sono stati trovati handler per il tipo di richiesta {requestType.Name}.")
+        };
     }
 
     /// <summary>
     /// Crea un handler di default.
     /// </summary>
-    /// <typeparam name="THandler">Il tipo di handler.</typeparam>
+    /// <typeparam name="TRequest">Il tipo di richiesta.</typeparam>
+    /// <typeparam name="TResponse">Il tipo di risposta.</typeparam>
     /// <param name="requestType">Il tipo di richiesta.</param>
     /// <returns>Una lista contenente un handler di default.</returns>
-    private static List<THandler> CreateDefaultHandler<THandler>(Type requestType)
+    private static List<IChainHandler<TRequest, TResponse>> CreateDefaultHandler<TRequest, TResponse>(Type requestType)
+        where TRequest : notnull
     {
+        //TODO: Implementare la logica per creare un handler di default
         // Questo metodo dovrebbe creare un handler di default
         // Per ora utilizziamo la stessa implementazione di CreateEmptyHandler
-        return CreateEmptyHandler<THandler>(requestType);
+        return [new EmptyChainHandler<TRequest, TResponse>()];
     }
-      /// <summary>
-    /// Implementazione di un handler vuoto per la catena di responsabilità.
+    
+        /// <summary>
+    /// Crea un handler di default.
     /// </summary>
-    /// <typeparam name="TRequest">Il tipo di richiesta che viene gestita.</typeparam>
-    private class EmptyHandler<TRequest> : IChainHandler<TRequest> where TRequest : notnull
+    /// <typeparam name="TRequest">Il tipo di richiesta.</typeparam>
+    /// <param name="requestType">Il tipo di richiesta.</param>
+    /// <returns>Una lista contenente un handler di default.</returns>
+    private static List<IChainHandler<TRequest>> CreateDefaultHandler<TRequest>(Type requestType)
+        where TRequest : notnull
     {
-        public Task<bool> CanHandleAsync(TRequest request, CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult(false);
-        }
-
-        public Task HandleAsync(TRequest request, CancellationToken cancellationToken = default)
-        {
-            return Task.CompletedTask;
-        }
-
-        public void SetNext(IChainHandler<TRequest> next)
-        {
-            // Non fa nulla, non c'è un handler successivo
-        }
-        
-        public Task NextAsync(TRequest request, CancellationToken cancellationToken = default)
-        {
-            // Non c'è un handler successivo, quindi terminiamo
-            return Task.CompletedTask;
-        }
+        //TODO: Implementare la logica per creare un handler di default
+        // Questo metodo dovrebbe creare un handler di default
+        // Per ora utilizziamo la stessa implementazione di CreateEmptyHandler
+        return [new EmptyChainHandler<TRequest>()];
     }
-      /// <summary>
-    /// Implementazione di un handler vuoto per la catena di responsabilità che restituisce una risposta.
-    /// </summary>
-    /// <typeparam name="TRequest">Il tipo di richiesta che viene gestita.</typeparam>
-    /// <typeparam name="TResponse">Il tipo di risposta che viene restituita.</typeparam>
-    private class EmptyHandler<TRequest, TResponse> : IChainHandler<TRequest, TResponse> where TRequest : notnull
-    {
-        public Task<bool> CanHandleAsync(TRequest request, CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult(false);
-        }
-
-        public Task<TResponse> HandleAsync(TRequest request, CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult<TResponse>(default!);
-        }
-
-        public void SetNext(IChainHandler<TRequest, TResponse> next)
-        {
-            // Non fa nulla, non c'è un handler successivo
-        }
-        
-        public Task<TResponse> NextAsync(TRequest request, CancellationToken cancellationToken = default)
-        {
-            // Non c'è un handler successivo, quindi terminiamo con valore predefinito
-            return Task.FromResult<TResponse>(default!);
-        }
-    }
+    
 }

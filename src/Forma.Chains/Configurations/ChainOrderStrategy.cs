@@ -14,6 +14,11 @@ public enum ChainOrderStrategy
     /// Ordina gli handler alfabeticamente per nome del tipo.
     /// </summary>
     Alphabetical,
+
+    /// <summary>
+    /// Ordina gli handler in ordine alfabetico inverso per nome del tipo.
+    /// </summary>
+    ReverseAlphabetical,
     
     /// <summary>
     /// Ordina gli handler in base all'attributo di priorità, se presente.
