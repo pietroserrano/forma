@@ -7,12 +7,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Forma.Core\Forma.Core.csproj" />
   </ItemGroup>
-  
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- TargetFramework e Nullable sono definiti in Directory.Build.props -->
   </PropertyGroup>
 
 </Project>
