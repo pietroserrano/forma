@@ -29,7 +29,7 @@ public class ChainTests
         request.Results = results;
         
         // Act
-        await chain.HandleAsync(request);
+        await chain.HandleAsync(request, async _ => { });
         
         // Assert
         Assert.Equal(3, results.Count);
@@ -58,7 +58,7 @@ public class ChainTests
         var request = new TestRequest { Value = 15 };
         
         // Act
-        var response = await chain.HandleAsync(request);
+        var response = await chain.HandleAsync(request, _ => throw new InvalidOperationException("No handler handled the request."));
         
         // Assert
         Assert.Equal("SecondHandler: 15", response.Result);
@@ -86,15 +86,15 @@ public class ChainTests
         var chain = provider.GetRequiredService<IChainHandler<TestRequest, TestResponse>>();
         
         // Act & Assert - Value less than 10
-        var response1 = await chain.HandleAsync(new TestRequest { Value = 5 });
+        var response1 = await chain.HandleAsync(new TestRequest { Value = 5 }, _ => throw new InvalidOperationException("No handler handled the request."));
         Assert.Equal("LessThan10: 5", response1.Result);
         
         // Act & Assert - Value between 10 and 20
-        var response2 = await chain.HandleAsync(new TestRequest { Value = 15 });
+        var response2 = await chain.HandleAsync(new TestRequest { Value = 15 }, _ => throw new InvalidOperationException("No handler handled the request."));
         Assert.Equal("Between10And20: 15", response2.Result);
         
         // Act & Assert - Value greater than 20
-        var response3 = await chain.HandleAsync(new TestRequest { Value = 25 });
+        var response3 = await chain.HandleAsync(new TestRequest { Value = 25 }, _ => throw new InvalidOperationException("No handler handled the request."));
         Assert.Equal("GreaterThan20: 25", response3.Result);
     }
 }
@@ -112,123 +112,121 @@ public class TestResponse
 }
 
 // Handler per il test base
-public class FirstHandler : ChainHandlerBase<TestRequest>
+public class FirstHandler : IChainHandler<TestRequest>
 {
-    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    public Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(true);
     }
-    
-    protected override Task ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+
+    public Task HandleAsync(TestRequest request, Func<CancellationToken, Task> next, CancellationToken cancellationToken = default)
     {
         request.Results?.Add("FirstHandler");
-        return NextAsync(request, cancellationToken);
+        return next(cancellationToken);
     }
 }
 
-public class SecondHandler : ChainHandlerBase<TestRequest>
+public class SecondHandler : IChainHandler<TestRequest>
 {
-    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    public Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(true);
     }
     
-    protected override Task ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+    public Task HandleAsync(TestRequest request, Func<CancellationToken, Task> next, CancellationToken cancellationToken = default)
     {
         request.Results?.Add("SecondHandler");
-        return NextAsync(request, cancellationToken);
+        return next(cancellationToken);
     }
 }
 
-public class ThirdHandler : ChainHandlerBase<TestRequest>
+public class ThirdHandler : IChainHandler<TestRequest>
 {
-    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    public Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(true);
     }
-    
-    protected override Task ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+
+    public Task HandleAsync(TestRequest request, Func<CancellationToken, Task> next, CancellationToken cancellationToken = default)
     {
         request.Results?.Add("ThirdHandler");
-        return Task.CompletedTask;
+        return next(cancellationToken);
     }
 }
 
 // Handler per il test con response
-public class FirstResponseHandler : ChainHandlerBase<TestRequest, TestResponse>
+public class FirstResponseHandler : IChainHandler<TestRequest, TestResponse>
 {
-    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    public Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(request.Value < 10);
     }
-    
-    protected override Task<TestResponse> ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+
+    public Task<TestResponse> HandleAsync(TestRequest request, Func<CancellationToken, Task<TestResponse>> next, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(new TestResponse { Result = $"FirstHandler: {request.Value}" });
     }
 }
 
-public class SecondResponseHandler : ChainHandlerBase<TestRequest, TestResponse>
+public class SecondResponseHandler : IChainHandler<TestRequest, TestResponse>
 {
-    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    public Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(request.Value >= 10 && request.Value <= 20);
     }
-    
-    protected override Task<TestResponse> ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+
+    public Task<TestResponse> HandleAsync(TestRequest request, Func<CancellationToken, Task<TestResponse>> next, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(new TestResponse { Result = $"SecondHandler: {request.Value}" });
     }
 }
 
-public class ThirdResponseHandler : ChainHandlerBase<TestRequest, TestResponse>
+public class ThirdResponseHandler : IChainHandler<TestRequest, TestResponse>
 {
-    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    public Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(request.Value > 20);
     }
-    
-    protected override Task<TestResponse> ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+
+    public Task<TestResponse> HandleAsync(TestRequest request, Func<CancellationToken, Task<TestResponse>> next, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(new TestResponse { Result = $"ThirdHandler: {request.Value}" });
     }
 }
 
 // Handler per il test condizionale
-public class ConditionalHandlerLessThan10 : ChainHandlerBase<TestRequest, TestResponse>
+public class ConditionalHandlerLessThan10 : IChainHandler<TestRequest, TestResponse>
 {
-    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    public Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(request.Value < 10);
     }
     
-    protected override Task<TestResponse> ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+    public Task<TestResponse> HandleAsync(TestRequest request, Func<CancellationToken, Task<TestResponse>> next, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(new TestResponse { Result = $"LessThan10: {request.Value}" });
     }
 }
 
-public class ConditionalHandlerBetween10And20 : ChainHandlerBase<TestRequest, TestResponse>
+public class ConditionalHandlerBetween10And20 : IChainHandler<TestRequest, TestResponse>
 {
-    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    public Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(request.Value >= 10 && request.Value <= 20);
     }
-    
-    protected override Task<TestResponse> ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+    public Task<TestResponse> HandleAsync(TestRequest request, Func<CancellationToken, Task<TestResponse>> next, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(new TestResponse { Result = $"Between10And20: {request.Value}" });
     }
 }
 
-public class ConditionalHandlerGreaterThan20 : ChainHandlerBase<TestRequest, TestResponse>
+public class ConditionalHandlerGreaterThan20 : IChainHandler<TestRequest, TestResponse>
 {
-    public override Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
+    public Task<bool> CanHandleAsync(TestRequest request, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(request.Value > 20);
     }
-    
-    protected override Task<TestResponse> ProcessRequestAsync(TestRequest request, CancellationToken cancellationToken = default)
+    public Task<TestResponse> HandleAsync(TestRequest request, Func<CancellationToken, Task<TestResponse>> next, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(new TestResponse { Result = $"GreaterThan20: {request.Value}" });
     }
