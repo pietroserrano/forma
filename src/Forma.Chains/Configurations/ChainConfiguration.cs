@@ -14,6 +14,16 @@ public class ChainConfiguration
     public ServiceLifetime ChainBuilderLifetime { get; set; } = ServiceLifetime.Singleton;
     
     /// <summary>
+    /// La durata del servizio ChainHandler.
+    /// </summary>
+    public ServiceLifetime ChainHandlerLifetime { get; set; } = ServiceLifetime.Transient;
+
+    /// <summary>
+    /// Il nome della catena.
+    /// </summary>
+    public string Name { get; set; } = string.Empty;
+    
+    /// <summary>
     /// Gli assembly da utilizzare per fare lo scan delle chain.
     /// </summary>
     public Assembly[] Assemblies { get; set; } = [];

@@ -18,24 +18,16 @@ internal class EmptyChainHandler<TRequest> : IChainHandler<TRequest> where TRequ
     }
 
     /// <summary>
-    /// Gestisce la richiesta non facendo nulla.
+    /// Gestisce la richiesta senza fare nulla.
     /// </summary>
-    public Task HandleAsync(TRequest request, CancellationToken cancellationToken = default)
+    /// <param name="request"></param>
+    /// <param name="next"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public Task HandleAsync(TRequest request, Func<CancellationToken, Task> next, CancellationToken cancellationToken = default)
     {
         return Task.CompletedTask;
-    }
-
-    public Task NextAsync(TRequest request, CancellationToken cancellationToken = default)
-    {
-        return Task.CompletedTask;
-    }
-
-    /// <summary>
-    /// Imposta il prossimo handler nella catena (non utilizzato in questa implementazione).
-    /// </summary>
-    public void SetNext(IChainHandler<TRequest> next)
-    {
-        // Non fa nulla, non c'è un handler successivo
     }
 }
 
@@ -55,24 +47,8 @@ internal class EmptyChainHandler<TRequest, TResponse> : IChainHandler<TRequest, 
         return Task.FromResult(false);
     }
 
-    /// <summary>
-    /// Gestisce la richiesta restituendo il valore predefinito per il tipo TResponse.
-    /// </summary>
-    public Task<TResponse> HandleAsync(TRequest request, CancellationToken cancellationToken = default)
+    public Task<TResponse> HandleAsync(TRequest request, Func<CancellationToken, Task<TResponse>> next, CancellationToken cancellationToken = default)
     {
         return Task.FromResult<TResponse>(default!);
-    }
-
-    public Task<TResponse> NextAsync(TRequest request, CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult<TResponse>(default!);
-    }
-
-    /// <summary>
-    /// Imposta il prossimo handler nella catena (non utilizzato in questa implementazione).
-    /// </summary>
-    public void SetNext(IChainHandler<TRequest, TResponse> next)
-    {
-        // Non fa nulla, non c'è un handler successivo
     }
 }
