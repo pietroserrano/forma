@@ -191,16 +191,13 @@ public class ChainConfigurationTests
         // Arrange
         var services = new ServiceCollection();
 
-        services.AddTransient<FirstHandler>();
-        services.AddTransient<SecondHandler>();
-        services.AddTransient<ThirdHandler>();        // Registrazione della catena con filtro (solo handler che iniziano con "F")
         services.AddChain<ConfigRequest>(options =>
         {
             options.HandlerTypeFilter = type => type.Name.StartsWith("F");
         }, typeof(FirstHandler), typeof(SecondHandler), typeof(ThirdHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<ConfigRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<ConfigRequest>>();
 
         var request = new ConfigRequest { Value = 10 };
         var results = new List<string>();
@@ -229,7 +226,7 @@ public class ChainConfigurationTests
         }, typeof(FirstHandler), typeof(SecondHandler), typeof(ThirdHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<ConfigRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<ConfigRequest>>();
 
         var request = new ConfigRequest { Value = 10 };
         var results = new List<string>();
@@ -257,7 +254,7 @@ public class ChainConfigurationTests
         var provider = services.BuildServiceProvider();
 
         // Act & Assert - Non dovrebbe lanciare un'eccezione
-        var chain = provider.GetRequiredService<IChainHandler<ConfigRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<ConfigRequest>>();
         Assert.NotNull(chain);
     }
 
@@ -276,7 +273,7 @@ public class ChainConfigurationTests
         // Act & Assert - Dovrebbe lanciare un'eccezione
         Assert.Throws<InvalidOperationException>(() =>
         {
-            provider.GetRequiredService<IChainHandler<ConfigRequest>>();
+            provider.GetRequiredService<IChainInvoker<ConfigRequest>>();
         });
     }
 
@@ -296,7 +293,7 @@ public class ChainConfigurationTests
         }, typeof(FirstResponseHandler), typeof(SecondResponseHandler), typeof(ThirdResponseHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<ConfigRequest, ConfigResponse>>();
+        var chain = provider.GetRequiredService<IChainInvoker<ConfigRequest, ConfigResponse>>();
 
         // Act
         var response = await chain.HandleAsync(new ConfigRequest { Value = 15 }, default);
@@ -311,12 +308,6 @@ public class ChainConfigurationTests
         // Arrange
         var services = new ServiceCollection();
 
-        services.AddTransient<FirstHandler>();
-        services.AddTransient<SecondHandler>();
-        services.AddTransient<ThirdHandler>();
-        services.AddTransient<FirstResponseHandler>();
-        services.AddTransient<SecondResponseHandler>();
-        services.AddTransient<ThirdResponseHandler>();        // Registrazione di due catene con configurazioni diverse
         services.AddChain<ConfigRequest>(options =>
         {
             options.HandlerValidator = handler => handler.GetType().Name != "SecondHandler";
@@ -330,18 +321,18 @@ public class ChainConfigurationTests
         var provider = services.BuildServiceProvider();
         
         // Chain without response
-        var chain1 = provider.GetRequiredService<IChainHandler<ConfigRequest>>();
+        var chain1 = provider.GetRequiredService<IChainInvoker<ConfigRequest>>();
         var request1 = new ConfigRequest { Value = 10 };
         var results = new List<string>();
         request1.Results = results;
 
         // Chain with response
-        var chain2 = provider.GetRequiredService<IChainHandler<ConfigRequest, ConfigResponse>>();
-        var request2 = new ConfigRequest { Value = 5 };
+        var chain2 = provider.GetRequiredService<IChainInvoker<ConfigRequest, ConfigResponse>>();
+        var request2 = new ConfigRequest { Value = 15 };
 
         // Act
         await chain1.HandleAsync(request1, default);
-        var response = await chain2.HandleAsync(request2, _ => throw new InvalidOperationException("No handler handled the request."));
+        var response = await chain2.HandleAsync(request2);
 
         // Assert - Per la prima catena, SecondHandler dovrebbe essere escluso
         Assert.Equal(2, results.Count);
@@ -349,6 +340,6 @@ public class ChainConfigurationTests
         Assert.Equal("ThirdHandler", results[1]);
 
         // Assert - Per la seconda catena, FirstHandler dovrebbe essere escluso quindi SecondHandler gestirà la richiesta
-        Assert.Equal("SecondHandler: 5", response.Result);
+        Assert.Equal("SecondHandler: 15", response.Result);
     }
 }

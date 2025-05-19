@@ -25,7 +25,7 @@ public class ChainOrderingTests
         }, typeof(SecondHandler), typeof(FirstHandler), typeof(ThirdHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
 
         var request = new TestRequest { Value = 1 };
         var results = new List<string>();
@@ -58,7 +58,7 @@ public class ChainOrderingTests
         }, typeof(FirstHandler), typeof(ThirdHandler), typeof(SecondHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
 
         var request = new TestRequest { Value = 2 };
         var results = new List<string>();
@@ -91,7 +91,7 @@ public class ChainOrderingTests
         }, typeof(ThirdHandler), typeof(SecondHandler), typeof(FirstHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
 
         var request = new TestRequest { Value = 3 };
         var results = new List<string>();
@@ -124,7 +124,7 @@ public class ChainOrderingTests
         }, typeof(ThirdHandler), typeof(FirstHandler), typeof(SecondHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
 
         var request = new TestRequest { Value = 4 };
         var results = new List<string>();
@@ -157,7 +157,7 @@ public class ChainOrderingTests
         }, typeof(PriorityHandlerDefault), typeof(PriorityHandlerHigh), typeof(PriorityHandlerLow));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
 
         var request = new TestRequest { Value = 5 };
         var results = new List<string>();
@@ -190,11 +190,10 @@ public class ChainOrderingTests
         }, typeof(PriorityResponseHandlerDefault), typeof(PriorityResponseHandlerLow), typeof(PriorityResponseHandlerHigh));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest, TestResponse>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest, TestResponse>>();
 
         // Act
-        var response = await chain.HandleAsync(new TestRequest { Value = 15 }, 
-            _ => throw new InvalidOperationException("No handler handled the request."));
+        var response = await chain.HandleAsync(new TestRequest { Value = 15 });
 
         // Assert - Should be handled by the highest priority handler
         Assert.Equal("High priority handler: 15", response.Result);

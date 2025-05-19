@@ -26,7 +26,7 @@ public class ChainConfigurationTestsTest
         }, typeof(SecondHandler), typeof(FirstHandler), typeof(ThirdHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
 
         var request = new TestRequest { Value = 1 };
         var results = new List<string>();
@@ -59,7 +59,7 @@ public class ChainConfigurationTestsTest
         }, typeof(FirstHandler), typeof(ThirdHandler), typeof(SecondHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
 
         var request = new TestRequest { Value = 2 };
         var results = new List<string>();
@@ -92,7 +92,7 @@ public class ChainConfigurationTestsTest
         }, typeof(ThirdHandler), typeof(SecondHandler), typeof(FirstHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
 
         var request = new TestRequest { Value = 3 };
         var results = new List<string>();
@@ -125,7 +125,7 @@ public class ChainConfigurationTestsTest
         }, typeof(ThirdHandler), typeof(FirstHandler), typeof(SecondHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
 
         var request = new TestRequest { Value = 4 };
         var results = new List<string>();
@@ -158,7 +158,7 @@ public class ChainConfigurationTestsTest
         }, typeof(PriorityHandlerDefault), typeof(PriorityHandlerHigh), typeof(PriorityHandlerLow));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
 
         var request = new TestRequest { Value = 5 };
         var results = new List<string>();

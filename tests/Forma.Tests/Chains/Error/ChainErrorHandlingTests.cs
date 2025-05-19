@@ -23,7 +23,7 @@ public class ChainErrorHandlingTests
             typeof(ThirdHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
         
         var request = new TestRequest { Value = 10 };
         var results = new List<string>();
@@ -56,13 +56,13 @@ public class ChainErrorHandlingTests
             typeof(ThirdResponseHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest, TestResponse>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest, TestResponse>>();
         
         var request = new TestRequest { Value = 15 };
         
         // Act & Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => 
-            chain.HandleAsync(request, _ => throw new InvalidOperationException("No handler handled the request.")));
+            chain.HandleAsync(request));
         
         Assert.Equal("Simulated error in response handler", ex.Message);
     }
@@ -78,7 +78,7 @@ public class ChainErrorHandlingTests
         services.AddChain<TestRequest>(typeof(SlowHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
         
         var request = new TestRequest { Value = 10 };
         
@@ -88,7 +88,7 @@ public class ChainErrorHandlingTests
         
         // Act & Assert
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => 
-            chain.HandleAsync(request, _ => Task.CompletedTask, cts.Token));
+            chain.HandleAsync(request, cts.Token));
     }
     
     [Fact]
@@ -107,7 +107,7 @@ public class ChainErrorHandlingTests
             typeof(ThirdHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
         
         var request = new TestRequest { Value = 10 };
         var results = new List<string>();

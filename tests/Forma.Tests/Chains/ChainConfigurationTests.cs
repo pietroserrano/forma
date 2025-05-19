@@ -49,7 +49,7 @@ public class ChainConfigurationTests
         }, typeof(ThirdHandler), typeof(FirstHandler), typeof(SecondHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
 
         var request = new TestRequest();
         request.Value = 10;
@@ -83,7 +83,7 @@ public class ChainConfigurationTests
         }, typeof(FirstHandler), typeof(SecondHandler), typeof(ThirdHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
 
         var request = new TestRequest { Value = 10 };
         var results = new List<string>();
@@ -114,7 +114,7 @@ public class ChainConfigurationTests
         }, typeof(FirstHandler), typeof(SecondHandler), typeof(ThirdHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
 
         var request = new TestRequest { Value = 10 };
         var results = new List<string>();
@@ -144,7 +144,7 @@ public class ChainConfigurationTests
         var provider = services.BuildServiceProvider();
 
         // Act & Assert - Non dovrebbe lanciare un'eccezione
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
         Assert.NotNull(chain);
     }
 
@@ -165,7 +165,7 @@ public class ChainConfigurationTests
         // Act & Assert - Dovrebbe lanciare un'eccezione
         Assert.Throws<InvalidOperationException>(() =>
         {
-            provider.GetRequiredService<IChainHandler<TestRequest>>();
+            provider.GetRequiredService<IChainInvoker<TestRequest>>();
         });
     }
 
@@ -187,7 +187,7 @@ public class ChainConfigurationTests
         }, typeof(FirstResponseHandler), typeof(SecondResponseHandler), typeof(ThirdResponseHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest, TestResponse>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest, TestResponse>>();
 
         // Act
         var response = await chain.HandleAsync(new TestRequest { Value = 15 }, default);

@@ -46,7 +46,7 @@ public interface IChainHandler<TRequest, TResponse> where TRequest : notnull
     /// <param name="next">Funzione per passare al prossimo handler nella catena.</param>
     /// <param name="cancellationToken">Token di cancellazione.</param>
     /// <returns>La risposta elaborata.</returns>
-    Task<TResponse> HandleAsync(TRequest request, Func<CancellationToken, Task<TResponse>> next, CancellationToken cancellationToken = default);
+    Task<TResponse> HandleAsync(TRequest request, Func<CancellationToken, Task<TResponse?>> next, CancellationToken cancellationToken = default);
     
     // /// <summary>
     // /// Passa la richiesta al prossimo handler nella catena e restituisce la risposta.
@@ -73,7 +73,7 @@ public interface IChainBuilder<TRequest> where TRequest : notnull
     /// Costruisce la catena di handler e restituisce il primo handler.
     /// </summary>
     /// <returns>Il primo handler nella catena.</returns>
-    ChainInvoker<TRequest> Build();
+    IChainInvoker<TRequest> Build(object? key);
 }
 
 /// <summary>
@@ -87,5 +87,5 @@ public interface IChainBuilder<TRequest, TResponse> where TRequest : notnull
     /// Costruisce la catena di handler e restituisce il primo handler.
     /// </summary>
     /// <returns>Il primo handler nella catena.</returns>
-    ChainInvoker<TRequest, TResponse> Build();
+    IChainInvoker<TRequest, TResponse> Build(object? key);
 }

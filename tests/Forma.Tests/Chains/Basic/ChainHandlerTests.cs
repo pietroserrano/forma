@@ -82,14 +82,14 @@ public class ChainHandlerTests
         services.AddChain<TestRequest>(typeof(FirstHandler), typeof(SecondHandler), typeof(ThirdHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
         
         var request = new TestRequest { Value = 10 };
         var results = new List<string>();
         request.Results = results;
         
         // Act
-        await chain.HandleAsync(request, async _ => { });
+        await chain.HandleAsync(request);
         
         // Assert
         Assert.Equal(3, results.Count);
@@ -111,7 +111,7 @@ public class ChainHandlerTests
         services.AddChain<TestRequest>(typeof(FirstHandler), typeof(SecondHandler), typeof(ThirdHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
         
         var request = new TestRequest { Value = 10 };
         var results = new List<string>();
@@ -120,7 +120,7 @@ public class ChainHandlerTests
         using var cts = new CancellationTokenSource();
         
         // Act
-        await chain.HandleAsync(request, async _ => { }, cts.Token);
+        await chain.HandleAsync(request, cts.Token);
         
         // Assert
         Assert.Equal(3, results.Count);
@@ -145,14 +145,14 @@ public class ChainHandlerTests
             typeof(ConditionalThirdHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
         
         var request = new TestRequest { Value = 15 };
         var results = new List<string>();
         request.Results = results;
         
         // Act
-        await chain.HandleAsync(request, async _ => { });
+        await chain.HandleAsync(request);
         
         // Assert - Only SecondHandler should process the request
         Assert.Single(results);
@@ -175,20 +175,17 @@ public class ChainHandlerTests
             typeof(ConditionalThirdHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
         
         var request = new TestRequest { Value = 50 };
         var results = new List<string>();
         request.Results = results;
         
-        bool defaultHandlerInvoked = false;
-        
         // Act
-        await chain.HandleAsync(request, async _ => { defaultHandlerInvoked = true; });
+        await chain.HandleAsync(request);
         
         // Assert - No handler should process the request, default handler should be invoked
         Assert.Empty(results);
-        Assert.True(defaultHandlerInvoked);
     }
 }
 

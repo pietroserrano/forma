@@ -37,7 +37,7 @@ internal class EmptyChainHandler<TRequest> : IChainHandler<TRequest> where TRequ
 /// </summary>
 /// <typeparam name="TRequest">Il tipo di richiesta che viene gestita.</typeparam>
 /// <typeparam name="TResponse">Il tipo di risposta che viene restituita.</typeparam>
-internal class EmptyChainHandler<TRequest, TResponse> : IChainHandler<TRequest, TResponse> where TRequest : notnull
+internal class EmptyChainHandler<TRequest, TResponse> : IChainHandler<TRequest, TResponse?> where TRequest : notnull
 {
     /// <summary>
     /// Restituisce sempre false, in quanto questo handler non gestisce alcuna richiesta.
@@ -47,8 +47,8 @@ internal class EmptyChainHandler<TRequest, TResponse> : IChainHandler<TRequest, 
         return Task.FromResult(false);
     }
 
-    public Task<TResponse> HandleAsync(TRequest request, Func<CancellationToken, Task<TResponse>> next, CancellationToken cancellationToken = default)
+    public Task<TResponse?> HandleAsync(TRequest request, Func<CancellationToken, Task<TResponse?>> next, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult<TResponse>(default!);
+        return Task.FromResult<TResponse?>(default!);
     }
 }

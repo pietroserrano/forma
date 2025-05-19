@@ -78,7 +78,7 @@ public static class ServiceCollectionExtensions
         {
             services.AddAllGenericImplementations(
                 typeof(IChainHandler<>),
-                ServiceLifetime.Transient,
+                configuration.ChainHandlerLifetime,
                 (t) => (typeFilter == null || typeFilter(t)) && 
                     t.BaseType != null &&
                     t.BaseType.IsGenericType,
@@ -95,7 +95,7 @@ public static class ServiceCollectionExtensions
             // Registra tutti i tipi di handler come servizi se non sono già registrati
             foreach (var handlerType in handlerTypes)
             {
-                services.TryAddTransient(handlerType);
+                services.TryAdd(new ServiceDescriptor(handlerType, handlerType, configuration.ChainHandlerLifetime));
             }
         }
 
@@ -136,11 +136,18 @@ public static class ServiceCollectionExtensions
 
         // Registra il primo handler della catena costruito dal ChainBuilder
         var handlerService = ServiceDescriptor.Describe(
-            typeof(IChainHandler<TRequest>),
-            sp => sp.GetRequiredService<IChainBuilder<TRequest>>().Build(),
+            typeof(IChainInvoker<TRequest>),
+            sp => sp.GetRequiredService<IChainBuilder<TRequest>>().Build(null),
             lifetime);
+
+        var keyedHandlerService = ServiceDescriptor.DescribeKeyed(
+            serviceType: typeof(IChainInvoker<TRequest>),
+            serviceKey: configuration.Name,
+            implementationFactory: (sp, key) => sp.GetRequiredService<IChainBuilder<TRequest>>().Build(key),
+            lifetime: lifetime);            
             
         services.Add(handlerService);
+        services.Add(keyedHandlerService);
 
         return services;
     }
@@ -179,11 +186,18 @@ public static class ServiceCollectionExtensions
 
         // Registra il primo handler della catena costruito dal ChainBuilder
         var handlerService = ServiceDescriptor.Describe(
-            typeof(IChainHandler<TRequest, TResponse>),
-            sp => sp.GetRequiredService<IChainBuilder<TRequest, TResponse>>().Build(),
+            typeof(IChainInvoker<TRequest, TResponse>),
+            sp => sp.GetRequiredService<IChainBuilder<TRequest, TResponse>>().Build(null),
             lifetime);
             
+        var keyedHandlerService = ServiceDescriptor.DescribeKeyed(
+            serviceType: typeof(IChainInvoker<TRequest, TResponse>),
+            serviceKey: configuration.Name,
+            implementationFactory: (sp, key) => sp.GetRequiredService<IChainBuilder<TRequest, TResponse>>().Build(key),
+            lifetime: lifetime);            
+            
         services.Add(handlerService);
+        services.Add(keyedHandlerService);
 
         return services;
     }
@@ -206,7 +220,7 @@ public static class ServiceCollectionExtensions
         var configuration = new ChainConfiguration();
         configureOptions(configuration);
         
-        return services.RegisterChain<TRequest>(ServiceLifetime.Transient, [], configuration);
+        return services.RegisterChain<TRequest>(configuration.ChainBuilderLifetime, [], configuration);
     }
 
     /// <summary>
@@ -229,7 +243,7 @@ public static class ServiceCollectionExtensions
         var configuration = new ChainConfiguration();
         configureOptions(configuration);
         
-        return services.RegisterChain<TRequest>(ServiceLifetime.Transient, handlerTypes, configuration);
+        return services.RegisterChain<TRequest>(configuration.ChainBuilderLifetime, handlerTypes, configuration);
     }
 
     /// <summary>
@@ -243,7 +257,7 @@ public static class ServiceCollectionExtensions
         where TRequest : notnull
     {
         ArgumentNullException.ThrowIfNull(services);
-        return services.RegisterChain<TRequest>(ServiceLifetime.Transient, [], new ChainConfiguration());
+        return services.RegisterChain<TRequest>(ServiceLifetime.Singleton, [], new ChainConfiguration());
     }
 
     /// <summary>
@@ -259,7 +273,7 @@ public static class ServiceCollectionExtensions
         where TRequest : notnull
     {
         ArgumentNullException.ThrowIfNull(services);
-        return services.RegisterChain<TRequest>(ServiceLifetime.Transient, handlerTypes, new ChainConfiguration());
+        return services.RegisterChain<TRequest>(ServiceLifetime.Singleton, handlerTypes, new ChainConfiguration());
     }
 
     /// <summary>
@@ -319,7 +333,7 @@ public static class ServiceCollectionExtensions
         where TRequest : notnull
     {
         ArgumentNullException.ThrowIfNull(services);
-        return services.RegisterChainWithResponse<TRequest, TResponse>(ServiceLifetime.Transient, handlerTypes, new ChainConfiguration());
+        return services.RegisterChainWithResponse<TRequest, TResponse>(ServiceLifetime.Singleton, handlerTypes, new ChainConfiguration());
     }
 
     /// <summary>
@@ -343,7 +357,7 @@ public static class ServiceCollectionExtensions
         var configuration = new ChainConfiguration();
         configureOptions(configuration);
         
-        return services.RegisterChainWithResponse<TRequest, TResponse>(ServiceLifetime.Transient, handlerTypes, configuration);
+        return services.RegisterChainWithResponse<TRequest, TResponse>(configuration.ChainBuilderLifetime, handlerTypes, configuration);
     }
 
     /// <summary>

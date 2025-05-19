@@ -22,14 +22,14 @@ public class ChainTests
         services.AddChain<TestRequest>(typeof(FirstHandler), typeof(SecondHandler), typeof(ThirdHandler));
 
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest>>();
         
         var request = new TestRequest { Value = 10 };
         var results = new List<string>();
         request.Results = results;
         
         // Act
-        await chain.HandleAsync(request, async _ => { });
+        await chain.HandleAsync(request);
         
         // Assert
         Assert.Equal(3, results.Count);
@@ -53,12 +53,12 @@ public class ChainTests
         services.AddChain<TestRequest, TestResponse>(typeof(FirstResponseHandler), typeof(SecondResponseHandler), typeof(ThirdResponseHandler));
         
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest, TestResponse>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest, TestResponse>>();
         
         var request = new TestRequest { Value = 15 };
         
         // Act
-        var response = await chain.HandleAsync(request, _ => throw new InvalidOperationException("No handler handled the request."));
+        var response = await chain.HandleAsync(request);
         
         // Assert
         Assert.Equal("SecondHandler: 15", response.Result);
@@ -83,18 +83,18 @@ public class ChainTests
         );
         
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<TestRequest, TestResponse>>();
+        var chain = provider.GetRequiredService<IChainInvoker<TestRequest, TestResponse>>();
         
         // Act & Assert - Value less than 10
-        var response1 = await chain.HandleAsync(new TestRequest { Value = 5 }, _ => throw new InvalidOperationException("No handler handled the request."));
+        var response1 = await chain.HandleAsync(new TestRequest { Value = 5 });
         Assert.Equal("LessThan10: 5", response1.Result);
         
         // Act & Assert - Value between 10 and 20
-        var response2 = await chain.HandleAsync(new TestRequest { Value = 15 }, _ => throw new InvalidOperationException("No handler handled the request."));
+        var response2 = await chain.HandleAsync(new TestRequest { Value = 15 });
         Assert.Equal("Between10And20: 15", response2.Result);
         
         // Act & Assert - Value greater than 20
-        var response3 = await chain.HandleAsync(new TestRequest { Value = 25 }, _ => throw new InvalidOperationException("No handler handled the request."));
+        var response3 = await chain.HandleAsync(new TestRequest { Value = 25 });
         Assert.Equal("GreaterThan20: 25", response3.Result);
     }
 }

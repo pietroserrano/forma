@@ -55,13 +55,13 @@ internal static class ChainHelpers
     /// <param name="requestType">Il tipo di richiesta.</param>
     /// <returns>Una lista di handler o lancia un'eccezione.</returns>
     /// <exception cref="InvalidOperationException">Lanciata se il comportamento è ThrowException.</exception>
-    public static List<IChainHandler<TRequest, TResponse>> HandleMissingHandlers<TRequest, TResponse>(MissingHandlerBehavior behavior, Type requestType)
+    public static List<IChainHandler<TRequest, TResponse?>> HandleMissingHandlers<TRequest, TResponse>(MissingHandlerBehavior behavior, Type requestType)
         where TRequest : notnull
     {
         return behavior switch
         {
             MissingHandlerBehavior.ReturnEmpty => [new EmptyChainHandler<TRequest, TResponse>()],
-            MissingHandlerBehavior.UseDefaultHandler => CreateDefaultHandler<TRequest, TResponse>(requestType),
+            MissingHandlerBehavior.UseDefaultHandler => CreateDefaultHandler<TRequest, TResponse?>(requestType),
             _ => throw new InvalidOperationException($"Non sono stati trovati handler per il tipo di richiesta {requestType.Name}.")
         };
     }
@@ -84,7 +84,7 @@ internal static class ChainHelpers
     /// <typeparam name="TResponse">Il tipo di risposta.</typeparam>
     /// <param name="requestType">Il tipo di richiesta.</param>
     /// <returns>Una lista contenente un handler di default.</returns>
-    private static List<IChainHandler<TRequest, TResponse>> CreateDefaultHandler<TRequest, TResponse>(Type requestType)
+    private static List<IChainHandler<TRequest, TResponse?>> CreateDefaultHandler<TRequest, TResponse>(Type requestType)
         where TRequest : notnull
     {
         //TODO: Implementare la logica per creare un handler di default

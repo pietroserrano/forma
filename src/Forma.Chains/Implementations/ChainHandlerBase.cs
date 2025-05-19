@@ -1,48 +1,59 @@
 using Forma.Chains.Abstractions;
 
 /// <summary>
-/// Classe helper per invocare una chain passando la funzione next direttamente.
-/// Gestisce l'avanzamento degli handler forniti tramite IEnumerable.
+/// Interfaccia per invocare una catena di handler.
 /// </summary>
-public class ChainInvoker<TRequest, TResponse> : IChainHandler<TRequest, TResponse> where TRequest : notnull
+/// <typeparam name="TRequest"></typeparam>
+/// <typeparam name="TResponse"></typeparam>
+public interface IChainInvoker<TRequest, TResponse> where TRequest : notnull
 {
-    private readonly IReadOnlyList<IChainHandler<TRequest, TResponse>> _handlers;
-
-    /// <summary>
-    /// Inizializza una nuova istanza della classe <see cref="ChainInvoker{TRequest, TResponse}"/>.
-    /// </summary>
-    /// <param name="handlers"></param>
-    /// <exception cref="ArgumentNullException"></exception>
-    public ChainInvoker(IEnumerable<IChainHandler<TRequest, TResponse>> handlers)
-    {
-        _handlers = handlers?.ToList() ?? [];
-    }
-
-    /// <summary>
-    /// Controlla se l'handler può gestire la richiesta.
-    /// </summary>
-    /// <param name="request"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public Task<bool> CanHandleAsync(TRequest request, CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(true);
-    }
-
     /// <summary>
     /// Gestisce la richiesta e restituisce una risposta.
     /// </summary>
     /// <param name="request"></param>
-    /// <param name="next"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
-    public Task<TResponse> HandleAsync(TRequest request, Func<CancellationToken, Task<TResponse>> next, CancellationToken cancellationToken = default)
+    Task<TResponse?> HandleAsync(TRequest request, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Interfaccia per invocare una catena di handler.
+/// </summary>
+/// <typeparam name="TRequest"></typeparam>
+public interface IChainInvoker<TRequest> where TRequest : notnull
+{
+    /// <summary>
+    /// Gestisce la richiesta e restituisce una risposta.
+    /// </summary>
+    /// <param name="request"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task HandleAsync(TRequest request, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Classe helper per invocare una chain passando la funzione next direttamente.
+/// Gestisce l'avanzamento degli handler forniti tramite IEnumerable.
+/// </summary>
+internal class ChainInvoker<TRequest, TResponse> : IChainInvoker<TRequest, TResponse> 
+    where TRequest : notnull
+{
+    private readonly IReadOnlyList<IChainHandler<TRequest, TResponse?>> _handlers;
+    private readonly object? _key;
+
+    public ChainInvoker(object? key, IEnumerable<IChainHandler<TRequest, TResponse?>> handlers)
+    {
+        _handlers = handlers?.ToList() ?? [];
+        _key = key;
+    }
+
+    /// <inheritdoc/>
+    public Task<TResponse?> HandleAsync(TRequest request, CancellationToken cancellationToken = default)
     {
         return HandleInternalAsync(0, request, cancellationToken);
     }
 
-    private async Task<TResponse> HandleInternalAsync(int index, TRequest request, CancellationToken cancellationToken)
+    private async Task<TResponse?> HandleInternalAsync(int index, TRequest request, CancellationToken cancellationToken)
     {
         if (index >= _handlers.Count)
             return default!;
@@ -59,45 +70,27 @@ public class ChainInvoker<TRequest, TResponse> : IChainHandler<TRequest, TRespon
     }
 }
 
-/// <summary>
-/// Classe helper per invocare una chain passando la funzione next direttamente.
-/// </summary>
-/// <typeparam name="TRequest"></typeparam>
 
-public class ChainInvoker<TRequest> : IChainHandler<TRequest> where TRequest : notnull
+internal class ChainInvoker<TRequest> : IChainInvoker<TRequest> 
+    where TRequest : notnull
 {
     private readonly IReadOnlyList<IChainHandler<TRequest>> _handlers;
+    private readonly object? _key;
 
     /// <summary>
     /// Inizializza una nuova istanza della classe <see cref="ChainInvoker{TRequest, TResponse}"/>.
     /// </summary>
+    /// <param name="key"></param>
     /// <param name="handlers"></param>
     /// <exception cref="ArgumentNullException"></exception>
-    public ChainInvoker(IEnumerable<IChainHandler<TRequest>> handlers)
+    public ChainInvoker(object? key, IEnumerable<IChainHandler<TRequest>> handlers)
     {
         _handlers = handlers?.ToList() ?? [];
+        _key = key;
     }
 
-    /// <summary>
-    /// Controlla se l'handler può gestire la richiesta.
-    /// </summary>
-    /// <param name="request"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public Task<bool> CanHandleAsync(TRequest request, CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(true);
-    }
-
-    /// <summary>
-    /// Gestisce la richiesta e restituisce una risposta.
-    /// </summary>
-    /// <param name="request"></param>
-    /// <param name="next"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
-    public Task HandleAsync(TRequest request, Func<CancellationToken, Task> next, CancellationToken cancellationToken = default)
+    /// <inheritdoc/>
+    public Task HandleAsync(TRequest request, CancellationToken cancellationToken = default)
     {
         return HandleInternalAsync(0, request, cancellationToken);
     }

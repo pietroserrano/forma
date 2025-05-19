@@ -31,7 +31,7 @@ public class ChainBuilder<TRequest> : IChainBuilder<TRequest> where TRequest : n
     /// Costruisce la catena di handler e restituisce il primo handler.
     /// </summary>
     /// <returns>Il primo handler nella catena.</returns>
-    public ChainInvoker<TRequest> Build()
+    public IChainInvoker<TRequest> Build(object? key)
     {
         var handlerInstances = new List<IChainHandler<TRequest>>();
         
@@ -64,7 +64,7 @@ public class ChainBuilder<TRequest> : IChainBuilder<TRequest> where TRequest : n
         // }
         
         // Restituisci il primo handler nella catena
-        return new ChainInvoker<TRequest>(handlerInstances);
+        return new ChainInvoker<TRequest>(key, handlerInstances);
     }
 }
 
@@ -96,9 +96,9 @@ public class ChainBuilder<TRequest, TResponse> : IChainBuilder<TRequest, TRespon
     /// Costruisce la catena di handler e restituisce il primo handler.
     /// </summary>
     /// <returns>Il primo handler nella catena.</returns>
-    public ChainInvoker<TRequest, TResponse> Build()
+    public IChainInvoker<TRequest, TResponse> Build(object? key)
     {
-        var handlerInstances = new List<IChainHandler<TRequest, TResponse>>();
+        var handlerInstances = new List<IChainHandler<TRequest, TResponse?>>();
         
         // Ordina i tipi di handler in base alla strategia di ordinamento
         var orderedHandlerTypes = ChainHelpers.OrderHandlerTypes(_handlerTypes, _configuration.OrderStrategy);
@@ -106,7 +106,7 @@ public class ChainBuilder<TRequest, TResponse> : IChainBuilder<TRequest, TRespon
         // Crea le istanze degli handler
         foreach (var handlerType in orderedHandlerTypes)
         {
-            if (_serviceProvider.GetService(handlerType) is IChainHandler<TRequest, TResponse> handler)
+            if (_serviceProvider.GetService(handlerType) is IChainHandler<TRequest, TResponse?> handler)
             {
                 // Applica la validazione se specificata
                 if (_configuration.HandlerValidator == null || _configuration.HandlerValidator(handler))
@@ -118,7 +118,7 @@ public class ChainBuilder<TRequest, TResponse> : IChainBuilder<TRequest, TRespon
           // Gestisci il caso di nessun handler trovato
         if (handlerInstances.Count == 0)
         {
-            handlerInstances = ChainHelpers.HandleMissingHandlers<TRequest, TResponse>(
+            handlerInstances = ChainHelpers.HandleMissingHandlers<TRequest, TResponse?>(
                 _configuration.MissingHandlerBehavior, 
                 typeof(TRequest));
         }
@@ -132,6 +132,6 @@ public class ChainBuilder<TRequest, TResponse> : IChainBuilder<TRequest, TRespon
         // }
         
         // Restituisci il primo handler nella catena
-        return new ChainInvoker<TRequest, TResponse>(handlerInstances);
+        return new ChainInvoker<TRequest, TResponse>(key, handlerInstances);
     }
 }

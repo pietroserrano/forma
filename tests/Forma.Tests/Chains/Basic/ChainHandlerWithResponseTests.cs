@@ -29,116 +29,113 @@ public class ChainHandlerWithResponseTests
     {
         // Arrange
         var services = new ServiceCollection();
-        
+
         // Registrazione dei servizi
         services.AddTransient<FirstResponseHandler>();
         services.AddTransient<SecondResponseHandler>();
         services.AddTransient<ThirdResponseHandler>();
-        
+
         // Registrazione della catena
         services.AddChain<ResponseRequest, ResponseResult>(typeof(FirstResponseHandler), typeof(SecondResponseHandler), typeof(ThirdResponseHandler));
-        
+
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<ResponseRequest, ResponseResult>>();
-        
+        var chain = provider.GetRequiredService<IChainInvoker<ResponseRequest, ResponseResult>>();
+
         var request = new ResponseRequest { Value = 15 };
-        
+
         // Act
-        var response = await chain.HandleAsync(request, _ => throw new InvalidOperationException("No handler handled the request."));
-        
+        var response = await chain.HandleAsync(request);
+
         // Assert
         Assert.Equal("SecondHandler: 15", response.Result);
     }
-    
+
     [Fact]
     public async Task ConditionalChain_ShouldHandleRequestBasedOnCondition()
     {
         // Arrange
         var services = new ServiceCollection();
-          // Registrazione dei servizi
+        // Registrazione dei servizi
         services.AddTransient<ConditionalHandlerLessThan10>();
         services.AddTransient<ConditionalHandlerBetween10And20>();
         services.AddTransient<ConditionalHandlerGreaterThan20>();
-        
+
         // Registrazione della catena
         services.AddChain<ResponseRequest, ResponseResult>(
             typeof(ConditionalHandlerLessThan10),
             typeof(ConditionalHandlerBetween10And20),
             typeof(ConditionalHandlerGreaterThan20)
         );
-        
+
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<ResponseRequest, ResponseResult>>();
-        
+        var chain = provider.GetRequiredService<IChainInvoker<ResponseRequest, ResponseResult>>();
+
         // Act & Assert - Value less than 10
-        var response1 = await chain.HandleAsync(new ResponseRequest { Value = 5 }, _ => throw new InvalidOperationException("No handler handled the request."));
+        var response1 = await chain.HandleAsync(new ResponseRequest { Value = 5 });
         Assert.Equal("LessThan10: 5", response1.Result);
-        
+
         // Act & Assert - Value between 10 and 20
-        var response2 = await chain.HandleAsync(new ResponseRequest { Value = 15 }, _ => throw new InvalidOperationException("No handler handled the request."));
+        var response2 = await chain.HandleAsync(new ResponseRequest { Value = 15 });
         Assert.Equal("Between10And20: 15", response2.Result);
-        
+
         // Act & Assert - Value greater than 20
-        var response3 = await chain.HandleAsync(new ResponseRequest { Value = 25 }, _ => throw new InvalidOperationException("No handler handled the request."));
+        var response3 = await chain.HandleAsync(new ResponseRequest { Value = 25 });
         Assert.Equal("GreaterThan20: 25", response3.Result);
-    }    [Fact]
+    }
+    [Fact]
     public async Task ChainWithResponse_AllHandlersSkipped_ShouldInvokeDefaultHandler()
     {
         // Arrange
         var services = new ServiceCollection();
-        
+
         // Registrazione di handler che non gestiranno la richiesta
         services.AddTransient<ConditionalHandlerLessThan10>();
         services.AddTransient<ConditionalHandlerBetween10And20>();
         services.AddTransient<ConditionalHandlerGreaterThan20>();
-        
+
         // Registrazione della catena
         services.AddChain<ResponseRequest, ResponseResult>(
             typeof(ConditionalHandlerLessThan10),
             typeof(ConditionalHandlerBetween10And20),
             typeof(ConditionalHandlerGreaterThan20)
         );
-        
+
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<ResponseRequest, ResponseResult>>();
-        
+        var chain = provider.GetRequiredService<IChainInvoker<ResponseRequest, ResponseResult>>();
+
         var request = new ResponseRequest { Value = 100 }; // Nessun handler gestirà questo valore
-        
-        var defaultResponse = new ResponseResult { Result = "Default" };
-        
+
         // Act
         var result = await chain.HandleAsync(
-            request, 
-            _ => Task.FromResult(defaultResponse)
+            request
         );
-        
-        // Assert - Should return the default response
-        Assert.Same(defaultResponse, result);
-        Assert.Equal("Default", result.Result);
-    }    [Fact]
+
+        // Assert - Should return null
+        Assert.Null(result);
+    }
+    [Fact]
     public async Task ChainWithResponse_WithCancellationToken_ShouldHandleRequest()
     {
         // Arrange
         var services = new ServiceCollection();
-        
+
         services.AddTransient<FirstResponseHandler>();
         services.AddTransient<SecondResponseHandler>();
         services.AddTransient<ThirdResponseHandler>();
-        
+
         services.AddChain<ResponseRequest, ResponseResult>(typeof(FirstResponseHandler), typeof(SecondResponseHandler), typeof(ThirdResponseHandler));
-        
+
         var provider = services.BuildServiceProvider();
-        var chain = provider.GetRequiredService<IChainHandler<ResponseRequest, ResponseResult>>();
-        
+        var chain = provider.GetRequiredService<IChainInvoker<ResponseRequest, ResponseResult>>();
+
         var request = new ResponseRequest { Value = 15 };
-        
+
         using var cts = new CancellationTokenSource();
-        
+
         // Act
-        var response = await chain.HandleAsync(request, 
-            _ => throw new InvalidOperationException("No handler handled the request."), 
+        var response = await chain.HandleAsync(request,
             cts.Token);
-        
+
         // Assert
         Assert.Equal("SecondHandler: 15", response.Result);
     }
@@ -191,7 +188,7 @@ public class ConditionalHandlerLessThan10 : IChainHandler<ResponseRequest, Respo
     {
         return Task.FromResult(request.Value < 10);
     }
-    
+
     public Task<ResponseResult> HandleAsync(ResponseRequest request, Func<CancellationToken, Task<ResponseResult>> next, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(new ResponseResult { Result = $"LessThan10: {request.Value}" });

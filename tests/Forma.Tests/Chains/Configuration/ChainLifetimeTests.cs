@@ -81,7 +81,7 @@ public class LifetimeFirstResponseHandler : IChainHandler<LifetimeRequest, Lifet
 
 public class ChainLifetimeTests
 {    [Fact]
-    public void DefaultLifetime_ShouldBeTransient()
+    public void DefaultLifetime_ShouldNotBeTransient()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -92,11 +92,11 @@ public class ChainLifetimeTests
         var provider = services.BuildServiceProvider();
         
         // Act - Get two instances
-        var instance1 = provider.GetRequiredService<IChainHandler<LifetimeRequest>>();
-        var instance2 = provider.GetRequiredService<IChainHandler<LifetimeRequest>>();
+        var instance1 = provider.GetRequiredService<IChainInvoker<LifetimeRequest>>();
+        var instance2 = provider.GetRequiredService<IChainInvoker<LifetimeRequest>>();
         
         // Assert - Should be different instances (transient)
-        Assert.NotSame(instance1, instance2);
+        Assert.Same(instance1, instance2);
     }
     
     [Fact]
@@ -106,15 +106,15 @@ public class ChainLifetimeTests
         var services = new ServiceCollection();
         
         // Registrazione della catena con lifetime Singleton
-        services.AddChain<TestRequest>(options => {
+        services.AddChain<LifetimeRequest>(options => {
             options.ChainHandlerLifetime = ServiceLifetime.Singleton;
-        }, typeof(FirstHandler));
+        }, typeof(LifetimeFirstHandler));
         
         var provider = services.BuildServiceProvider();
         
         // Act - Get two instances
-        var instance1 = provider.GetRequiredService<IChainHandler<TestRequest>>();
-        var instance2 = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var instance1 = provider.GetRequiredService<IChainInvoker<LifetimeRequest>>();
+        var instance2 = provider.GetRequiredService<IChainInvoker<LifetimeRequest>>();
         
         // Assert - Should be the same instance (singleton)
         Assert.Same(instance1, instance2);
@@ -127,26 +127,28 @@ public class ChainLifetimeTests
         var services = new ServiceCollection();
         
         // Registrazione della catena con lifetime Scoped
-        services.AddChain<TestRequest>(options => {
+        services.AddChain<LifetimeRequest>(options =>
+        {
             options.ChainHandlerLifetime = ServiceLifetime.Scoped;
-        }, typeof(FirstHandler));
+            options.ChainBuilderLifetime = ServiceLifetime.Scoped;
+        }, typeof(LifetimeFirstHandler));
         
         var provider = services.BuildServiceProvider();
         
         // Act - Get instances in same and different scopes
-        IChainHandler<TestRequest> instance1;
-        IChainHandler<TestRequest> instance2;
-        IChainHandler<TestRequest> instance3;
+        IChainInvoker<LifetimeRequest> instance1;
+        IChainInvoker<LifetimeRequest> instance2;
+        IChainInvoker<LifetimeRequest> instance3;
         
         using (var scope1 = provider.CreateScope())
         {
-            instance1 = scope1.ServiceProvider.GetRequiredService<IChainHandler<TestRequest>>();
-            instance2 = scope1.ServiceProvider.GetRequiredService<IChainHandler<TestRequest>>();
+            instance1 = scope1.ServiceProvider.GetRequiredService<IChainInvoker<LifetimeRequest>>();
+            instance2 = scope1.ServiceProvider.GetRequiredService<IChainInvoker<LifetimeRequest>>();
         }
         
         using (var scope2 = provider.CreateScope())
         {
-            instance3 = scope2.ServiceProvider.GetRequiredService<IChainHandler<TestRequest>>();
+            instance3 = scope2.ServiceProvider.GetRequiredService<IChainInvoker<LifetimeRequest>>();
         }
         
         // Assert - Same scope should have same instance, different scopes should have different instances
@@ -161,15 +163,15 @@ public class ChainLifetimeTests
         var services = new ServiceCollection();
         
         // Registrazione della catena con lifetime Singleton
-        services.AddChain<TestRequest, TestResponse>(options => {
+        services.AddChain<LifetimeRequest, LifetimeResponse>(options => {
             options.ChainHandlerLifetime = ServiceLifetime.Singleton;
-        }, typeof(FirstResponseHandler));
+        }, typeof(LifetimeFirstResponseHandler));
         
         var provider = services.BuildServiceProvider();
         
         // Act - Get two instances
-        var instance1 = provider.GetRequiredService<IChainHandler<TestRequest, TestResponse>>();
-        var instance2 = provider.GetRequiredService<IChainHandler<TestRequest, TestResponse>>();
+        var instance1 = provider.GetRequiredService<IChainInvoker<LifetimeRequest, LifetimeResponse>>();
+        var instance2 = provider.GetRequiredService<IChainInvoker<LifetimeRequest, LifetimeResponse>>();
         
         // Assert - Should be the same instance (singleton)
         Assert.Same(instance1, instance2);
@@ -182,22 +184,26 @@ public class ChainLifetimeTests
         var services = new ServiceCollection();
         
         // Registrazione di due catene con diverse configurazioni di lifetime
-        services.AddChain<TestRequest>(options => {
+        services.AddChain<LifetimeRequest>(options =>
+        {
             options.ChainHandlerLifetime = ServiceLifetime.Singleton;
-        }, typeof(FirstHandler));
+            options.ChainBuilderLifetime = ServiceLifetime.Singleton;
+        }, typeof(LifetimeFirstHandler));
         
-        services.AddChain<TestRequest, TestResponse>(options => {
+        services.AddChain<LifetimeRequest, LifetimeResponse>(options =>
+        {
             options.ChainHandlerLifetime = ServiceLifetime.Transient;
-        }, typeof(FirstResponseHandler));
+            options.ChainBuilderLifetime = ServiceLifetime.Transient;
+        }, typeof(LifetimeFirstResponseHandler));
         
         var provider = services.BuildServiceProvider();
         
         // Act
-        var instance1 = provider.GetRequiredService<IChainHandler<TestRequest>>();
-        var instance2 = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var instance1 = provider.GetRequiredService<IChainInvoker<LifetimeRequest>>();
+        var instance2 = provider.GetRequiredService<IChainInvoker<LifetimeRequest>>();
         
-        var instance3 = provider.GetRequiredService<IChainHandler<TestRequest, TestResponse>>();
-        var instance4 = provider.GetRequiredService<IChainHandler<TestRequest, TestResponse>>();
+        var instance3 = provider.GetRequiredService<IChainInvoker<LifetimeRequest, LifetimeResponse>>();
+        var instance4 = provider.GetRequiredService<IChainInvoker<LifetimeRequest, LifetimeResponse>>();
         
         // Assert
         Assert.Same(instance1, instance2); // Singleton - same instance
@@ -210,36 +216,32 @@ public class ChainLifetimeTests
         // Arrange
         var services = new ServiceCollection();
         
-        // Register handlers
-        services.AddTransient<FirstHandler>();
-        services.AddTransient<SecondHandler>();
-        services.AddTransient<ThirdHandler>();
-        
         // Registrazione di due catene per lo stesso tipo di richiesta ma con diverse configurazioni di lifetime
-        services.AddChain<TestRequest>(options => {
+        services.AddChain<LifetimeRequest>(options => {
             options.ChainHandlerLifetime = ServiceLifetime.Singleton;
             options.Name = "singleton-chain";
-        }, typeof(FirstHandler), typeof(SecondHandler), typeof(ThirdHandler));
+        }, typeof(LifetimeFirstHandler), typeof(LifetimeSecondHandler), typeof(LifetimeThirdHandler));
         
-        services.AddChain<TestRequest>(options => {
+        services.AddChain<LifetimeRequest>(options => {
             options.ChainHandlerLifetime = ServiceLifetime.Transient;
             options.Name = "transient-chain";
-        }, typeof(FirstHandler), typeof(SecondHandler), typeof(ThirdHandler));
+        }, typeof(LifetimeFirstHandler), typeof(LifetimeSecondHandler), typeof(LifetimeThirdHandler));
         
         var provider = services.BuildServiceProvider();
         
         // Get chains
-        var singletonChain = provider.GetRequiredService<IChainHandler<TestRequest>>();
+        var singletonChain = provider.GetRequiredKeyedService<IChainInvoker<LifetimeRequest>>("singleton-chain");
+        var transientChain = provider.GetRequiredKeyedService<IChainInvoker<LifetimeRequest>>("transient-chain");
         
         // Act - Execute both chains
-        var request1 = new TestRequest { Value = 10 };
+        var request1 = new LifetimeRequest { Value = 10 };
         request1.Results = new List<string>();
         
-        var request2 = new TestRequest { Value = 20 };
+        var request2 = new LifetimeRequest { Value = 20 };
         request2.Results = new List<string>();
         
         await singletonChain.HandleAsync(request1, default);
-        await singletonChain.HandleAsync(request2, default);
+        await transientChain.HandleAsync(request2, default);
         
         // Assert - Both executions should produce the same results regardless of lifetime
         Assert.Equal(3, request1.Results.Count);
