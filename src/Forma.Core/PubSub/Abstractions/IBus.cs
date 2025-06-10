@@ -12,4 +12,12 @@ public interface IBus
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <typeparam name="TEvent">The type of the event.</typeparam>
     Task PublishAsync<TEvent>(TEvent @event, CancellationToken cancellationToken = default) where TEvent : IEvent;
+    
+    /// <summary>
+    /// Publishes a batch of events to the bus.
+    /// </summary>
+    /// <param name="events">Collection of events to publish.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <typeparam name="TEvent">The type of the events.</typeparam>
+    Task PublishBatchAsync<TEvent>(IEnumerable<TEvent> events, CancellationToken cancellationToken = default) where TEvent : IEvent;
 }
