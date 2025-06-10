@@ -44,7 +44,10 @@ jobs:
       
     - name: Pack Decorator
       run: dotnet pack src/Forma.Decorator/Forma.Decorator.csproj -c Release -o packages
-      
+    
+    - name: Add NuGet source
+      run: dotnet nuget add source --name github --username ${{ secrets.GITHUB_USERNAME }} --password ${{ secrets.GITHUB_TOKEN }} https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json  
+
     - name: Push to NuGet
-      run: dotnet nuget push "./packages/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
       if: success()
+      run: dotnet nuget push "./packages/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json

@@ -187,16 +187,16 @@ if ($UseLocalNuget) {
         $tempWorkflowPath = Join-Path $tempFolder (Split-Path $workflowFile -Leaf)
         
         # Read original workflow
-        $workflowContent = Get-Content -Path $originalWorkflowPath -Raw
-        
-        # Replace NuGet URL and show a notification
-        $workflowContent = $workflowContent -replace "https://api.nuget.org/v3/index.json", $nugetSourceUrl
-        
-        # Add notification about using local NuGet server
-        $workflowContent = $workflowContent -replace "name: Push to NuGet", @"
-name: Push to Local NuGet Server
-      run: |
-        echo "Publishing to local NuGet server at $nugetSourceUrl"
+        $workflowContent = Get-Content -Path $originalWorkflowPath -Raw        # Replace the GitHub NuGet source with our local source
+        $workflowContent = $workflowContent -replace "    - name: Add NuGet source\s+run: dotnet nuget add source --name github --username .+ --password .+ .+", @"
+    - name: Add Local NuGet Source
+      run: dotnet nuget add source --name local $nugetSourceUrl --allow-insecure-connections
+"@
+          # Replace the Push to NuGet step to use our local server
+        $workflowContent = $workflowContent -replace "    - name: Push to NuGet\s+if: success\(\)\s+run: dotnet nuget push [`"].*[`"] --api-key .* --source .*", @"
+    - name: Push to Local NuGet Server
+      if: success()
+      run: dotnet nuget push "./packages/*.nupkg" --api-key $nugetApiKey --source local --skip-duplicate --no-symbols --no-service-endpoint true
 "@
         
         # Write to temp file
@@ -227,14 +227,16 @@ try {
     # Run act with --dryrun to see what will be executed
     Invoke-Expression "$actCommand --dryrun"
     
-    $confirmation = Read-Host "Do you want to proceed with the actual execution? [y/N]"
-    if ($confirmation -eq 'Y' -or $confirmation -eq 'y') {
-        # Actually run act
-        Invoke-Expression $actCommand
-    }
-    else {
-        Write-Host "Execution cancelled." -ForegroundColor Yellow
-    }
+    # $confirmation = Read-Host "Do you want to proceed with the actual execution? [y/N]"
+    # if ($confirmation -eq 'Y' -or $confirmation -eq 'y') {
+    #     # Actually run act
+    #     Invoke-Expression $actCommand
+    # }
+    # else {
+    #     Write-Host "Execution cancelled." -ForegroundColor Yellow
+    # }
+
+    Invoke-Expression $actCommand
 }
 catch {
     Write-Error "Error during act execution: $_"
