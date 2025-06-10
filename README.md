@@ -4,6 +4,8 @@
 
 > Build composable, decoupled, and maintainable application flows using clean architectural principles.
 
+[![Build and Test](https://github.com/your-org/forma/actions/workflows/build-test.yml/badge.svg)](https://github.com/your-org/forma/actions/workflows/build-test.yml)
+
 ---
 
 ## ✨ Features
@@ -19,12 +21,17 @@
 
 ## 📦 Installation
 
-Coming soon on [NuGet.org](https://www.nuget.org/):
+Available on [NuGet.org](https://www.nuget.org/):
 
 ```bash
+# Core components
 dotnet add package Forma.Core
 dotnet add package Forma.Mediator
 dotnet add package Forma.Decorator
+
+# Additional components
+dotnet add package Forma.Chains
+dotnet add package Forma.PubSub.InMemory
 ```
 
 ## Benchmark
@@ -38,3 +45,48 @@ dotnet add package Forma.Decorator
 |                             |                     |          |         |          |          |      |
 | Forma_SimpleRequest         | SimpleRequest       | 283.0 ns | 5.50 ns |  5.40 ns | 282.7 ns |    1 |
 | MediatR_SimpleRequest       | SimpleRequest       | 412.1 ns | 7.47 ns | 10.71 ns | 408.1 ns |    2 |
+
+## 🛠 Development
+
+### Requirements
+- .NET 9.0 SDK or higher
+- Visual Studio 2025 or other .NET-compatible IDE
+
+### Useful Commands
+
+```bash
+# Build the project
+dotnet build
+
+# Run tests
+dotnet test
+
+# Run benchmarks
+dotnet run -c Release --project src/Forma.Benchmarks/Forma.Benchmarks.csproj
+```
+
+## 📋 Documentation
+
+- [Release Guide](./docs/release-guide.md) - Release strategy and instructions for maintainers
+- [Testing GitHub Actions](./docs/testing-github-actions.md) - How to test GitHub Actions workflows locally
+
+## 🚀 Release Process
+
+Forma uses a hybrid approach for releasing its NuGet packages:
+
+- **Core Releases** (`Forma.Core`, `Forma.Mediator`, `Forma.Decorator`): Released together with the same version
+- **Component Releases** (`Forma.Chains`, `Forma.PubSub.InMemory`): Released independently
+
+For more information on the release process, see the [Release Guide](./docs/release-guide.md).
+
+## 👥 Contributing
+
+Contributions are welcome! If you'd like to contribute to Forma:
+
+1. Fork the repository
+2. Create a branch for your feature (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+Before contributing, please review the development documentation in the `docs/` folder.
