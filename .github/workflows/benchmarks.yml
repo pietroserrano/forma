@@ -1,0 +1,36 @@
+name: Run Benchmarks
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 1'  # Every Monday at midnight
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 6.0.x
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build -c Release --no-restore
+      
+    - name: Run Mediator Benchmarks
+      run: dotnet run -c Release --project src/Forma.Benchmarks/Forma.Benchmarks.csproj -- -f * --filter RequestMediatorBenchmarks
+    
+    - name: Run Decorator Benchmarks
+      run: dotnet run -c Release --project src/Forma.Benchmarks/Forma.Benchmarks.csproj -- -f * --filter DecoratorComparisonBenchmarks
+      
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmark-results
+        path: BenchmarkDotNet.Artifacts/results/

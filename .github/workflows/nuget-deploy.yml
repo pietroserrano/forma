@@ -1,0 +1,50 @@
+name: NuGet Core Package Deploy
+
+on:
+  push:
+    tags:
+      - 'v*-core'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 6.0.x
+        
+    - name: Extract version from tag
+      id: get_version
+      run: echo "VERSION=$(echo ${GITHUB_REF#refs/tags/v} | sed 's/-core$//')" >> $GITHUB_OUTPUT
+      
+    - name: Update version in Directory.Build.props
+      run: |
+        if [ -f Directory.Build.props ]; then
+          sed -i "s/<Version>.*<\/Version>/<Version>${{ steps.get_version.outputs.VERSION }}<\/Version>/" Directory.Build.props
+        fi
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+      
+    - name: Test
+      run: dotnet test --configuration Release --no-build
+      
+    - name: Pack Core
+      run: dotnet pack src/Forma.Core/Forma.Core.csproj -c Release -o packages
+      
+    - name: Pack Mediator
+      run: dotnet pack src/Forma.Mediator/Forma.Mediator.csproj -c Release -o packages
+      
+    - name: Pack Decorator
+      run: dotnet pack src/Forma.Decorator/Forma.Decorator.csproj -c Release -o packages
+      
+    - name: Push to NuGet
+      run: dotnet nuget push "./packages/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+      if: success()
