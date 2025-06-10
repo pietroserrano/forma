@@ -44,6 +44,7 @@ jobs:
       
     - name: Pack Decorator
       run: dotnet pack src/Forma.Decorator/Forma.Decorator.csproj -c Release -o packages
-
+      
     - name: Push to NuGet
       run: dotnet nuget push "./packages/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+      if: success()
