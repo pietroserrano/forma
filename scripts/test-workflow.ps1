@@ -1,6 +1,6 @@
 #!/usr/bin/env pwsh
 
-# test-workflow.ps1 - Script per testare GitHub Actions localmente con act
+# test-workflow.ps1 - Script for testing GitHub Actions locally with act
 
 param(
     [Parameter(Mandatory=$true)]
@@ -14,26 +14,26 @@ param(
     [string]$Component = "chains"
 )
 
-# Verifica che Docker sia in esecuzione
+# Check if Docker is running
 try {
     docker info | Out-Null
     if ($LASTEXITCODE -ne 0) {
-        Write-Error "Docker non è in esecuzione. Avvia Docker e riprova."
+        Write-Error "Docker is not running. Start Docker and try again."
         exit 1
     }
 }
 catch {
-    Write-Error "Impossibile connettersi a Docker. Assicurati che Docker sia installato e in esecuzione."
+    Write-Error "Unable to connect to Docker. Make sure Docker is installed and running."
     exit 1
 }
 
-# Verifica che act sia installato
+# Check if act is installed
 if (!(Get-Command act -ErrorAction SilentlyContinue)) {
-    Write-Error "act non è installato. Installa act con 'winget install nektos.act' o segui le istruzioni in scripts/install-act.md"
+    Write-Error "act is not installed. Install act with 'winget install nektos.act' or follow the instructions in scripts/install-act.md"
     exit 1
 }
 
-# Determina quale workflow testare e imposta i parametri
+# Determine which workflow to test and set parameters
 $workflowFile = ""
 $eventName = "push"
 $eventJson = ""
@@ -69,33 +69,33 @@ else {
 "@
 }
 
-# Salva l'evento in un file temporaneo
+# Save event to a temporary file
 $eventFile = Join-Path $env:TEMP "github-event-$([Guid]::NewGuid().ToString()).json"
 $eventJson | Set-Content -Path $eventFile
 
-Write-Host "Testando il workflow di tipo '$WorkflowType' con tag '$tagName'..." -ForegroundColor Yellow
+Write-Host "Testing workflow type '$WorkflowType' with tag '$tagName'..." -ForegroundColor Yellow
 
-# Esegui act e simula un evento di push di tag
+# Run act and simulate a tag push event
 try {
-    Write-Host "Comando act: act push --eventpath $eventFile -W $workflowFile --secret NUGET_API_KEY=fake-api-key --container-architecture linux/amd64" -ForegroundColor Cyan
+    Write-Host "Act command: act push --eventpath $eventFile -W $workflowFile --secret NUGET_API_KEY=fake-api-key --container-architecture linux/amd64" -ForegroundColor Cyan
     
-    # Esegui act con --dry-run per vedere prima cosa verrà eseguito
-    act push --eventpath $eventFile -W $workflowFile --secret NUGET_API_KEY=fake-api-key --container-architecture linux/amd64 --dry-run
+    # Run act with --dryrun to see what will be executed
+    act push --eventpath $eventFile -W $workflowFile --secret NUGET_API_KEY=fake-api-key --container-architecture linux/amd64 --dryrun
     
-    $confirmation = Read-Host "Vuoi procedere con l'esecuzione effettiva? [s/N]"
-    if ($confirmation -eq 'S' -or $confirmation -eq 's') {
-        # Esegui act davvero
+    $confirmation = Read-Host "Do you want to proceed with the actual execution? [y/N]"
+    if ($confirmation -eq 'Y' -or $confirmation -eq 'y') {
+        # Actually run act
         act push --eventpath $eventFile -W $workflowFile --secret NUGET_API_KEY=fake-api-key --container-architecture linux/amd64
     }
     else {
-        Write-Host "Esecuzione annullata." -ForegroundColor Yellow
+        Write-Host "Execution cancelled." -ForegroundColor Yellow
     }
 }
 catch {
-    Write-Error "Errore durante l'esecuzione di act: $_"
+    Write-Error "Error during act execution: $_"
 }
 finally {
-    # Rimuovi il file temporaneo
+    # Remove temporary file
     if (Test-Path $eventFile) {
         Remove-Item -Path $eventFile -Force
     }

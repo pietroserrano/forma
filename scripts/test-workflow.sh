@@ -1,17 +1,17 @@
 #!/bin/bash
 
-# test-workflow.sh - Script per testare GitHub Actions localmente con act
+# test-workflow.sh - Script for testing GitHub Actions locally with act
 
-# Funzione per mostrare l'utilizzo dello script
+# Function to show script usage
 show_usage() {
-    echo "Utilizzo: $0 -t <workflow_type> [-v <version>] [-c <component>]"
+    echo "Usage: $0 -t <workflow_type> [-v <version>] [-c <component>]"
     echo ""
-    echo "Parametri:"
-    echo "  -t, --type       Tipo di workflow (core o component)"
-    echo "  -v, --version    Versione da usare per il test (default: 1.0.0-test)"
-    echo "  -c, --component  Componente per workflow component (default: chains)"
+    echo "Parameters:"
+    echo "  -t, --type       Workflow type (core or component)"
+    echo "  -v, --version    Version to use for the test (default: 1.0.0-test)"
+    echo "  -c, --component  Component for component workflow (default: chains)"
     echo ""
-    echo "Esempi:"
+    echo "Examples:"
     echo "  $0 -t core"
     echo "  $0 -t component -c pubsub -v 1.2.3-test"
     exit 1
@@ -39,38 +39,37 @@ while [[ $# -gt 0 ]]; do
             COMPONENT="$2"
             shift
             shift
-            ;;
-        *)
-            echo "Parametro non riconosciuto: $1"
+            ;;        *)
+            echo "Unrecognized parameter: $1"
             show_usage
             ;;
     esac
 done
 
-# Validazione dei parametri
+# Parameter validation
 if [ -z "$WORKFLOW_TYPE" ]; then
-    echo "Errore: Il parametro workflow_type è obbligatorio"
+    echo "Error: The workflow_type parameter is mandatory"
     show_usage
 fi
 
 if [ "$WORKFLOW_TYPE" != "core" ] && [ "$WORKFLOW_TYPE" != "component" ]; then
-    echo "Errore: Il tipo di workflow deve essere 'core' o 'component'"
+    echo "Error: The workflow type must be 'core' or 'component'"
     show_usage
 fi
 
-# Verifica che Docker sia in esecuzione
+# Check if Docker is running
 if ! docker info &> /dev/null; then
-    echo "Errore: Docker non è in esecuzione. Avvia Docker e riprova."
+    echo "Error: Docker is not running. Start Docker and try again."
     exit 1
 fi
 
-# Verifica che act sia installato
+# Check if act is installed
 if ! command -v act &> /dev/null; then
-    echo "Errore: act non è installato. Installa act seguendo le istruzioni in scripts/install-act.md"
+    echo "Error: act is not installed. Install act following the instructions in scripts/install-act.md"
     exit 1
 fi
 
-# Determina quale workflow testare e imposta i parametri
+# Determine which workflow to test and set parameters
 WORKFLOW_FILE=""
 EVENT_NAME="push"
 EVENT_FILE=$(mktemp)
@@ -105,26 +104,26 @@ else
 EOF
 fi
 
-echo "Testando il workflow di tipo '$WORKFLOW_TYPE' con tag '$TAG_NAME'..."
+echo "Testing workflow type '$WORKFLOW_TYPE' with tag '$TAG_NAME'..."
 
-# Esegui act e simula un evento di push di tag
+# Run act and simulate a tag push event
 act_cmd="act push --eventpath $EVENT_FILE -W $WORKFLOW_FILE --secret NUGET_API_KEY=fake-api-key --container-architecture linux/amd64"
 
-# Mostra il comando
-echo "Comando act: $act_cmd --dry-run"
+# Show the command
+echo "Act command: $act_cmd --dryrun"
 
-# Esegui act con --dry-run per vedere prima cosa verrà eseguito
-eval "$act_cmd --dry-run"
+# Run act with --dryrun to see what will be executed
+eval "$act_cmd --dryrun"
 
-read -p "Vuoi procedere con l'esecuzione effettiva? [s/N] " confirmation
-if [[ $confirmation =~ ^[Ss]$ ]]; then
-    # Esegui act davvero
+read -p "Do you want to proceed with the actual execution? [y/N] " confirmation
+if [[ $confirmation =~ ^[Yy]$ ]]; then
+    # Actually run act
     eval "$act_cmd"
 else
-    echo "Esecuzione annullata."
+    echo "Execution cancelled."
 fi
 
-# Rimuovi il file temporaneo
+# Remove temporary file
 if [ -f "$EVENT_FILE" ]; then
     rm "$EVENT_FILE"
 fi
