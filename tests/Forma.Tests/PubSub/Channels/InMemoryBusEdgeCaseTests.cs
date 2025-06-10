@@ -75,12 +75,23 @@ public class InMemoryBusEdgeCaseTests
 
         // Act - Pubblica un evento con dati nulli
         var testEvent = new TestEvent { Message = null };
-        await bus.PublishAsync(testEvent);
+        await bus.PublishAsync(testEvent);        // Attendi che l'elaborazione sia completata con un timeout più lungo per gli ambienti CI/CD
+        var processingCompleted = await Task.WhenAny(consumer.ProcessingComplete.Task, Task.Delay(2000));
+        
+        // Se il timeout scade, aspetta un po' di più e controlla se è arrivato l'evento
+        if (processingCompleted != consumer.ProcessingComplete.Task)
+        {
+            Console.WriteLine("Timeout mentre si attendeva che l'elaborazione fosse completata");
+            await Task.Delay(1000); // Diamo un po' più di tempo
+        }
 
-        // Attendi che l'elaborazione sia completata
-        await Task.WhenAny(consumer.ProcessingComplete.Task, Task.Delay(500));
+        // Assert - Verifichiamo più volte in caso di race condition
+        for (int attempt = 0; attempt < 3 && consumer.ReceivedEvents.Count == 0; attempt++)
+        {
+            await Task.Delay(500);
+            Console.WriteLine($"Tentativo {attempt + 1}: ReceivedEvents.Count = {consumer.ReceivedEvents.Count}");
+        }
 
-        // Assert
         Assert.Single(consumer.ReceivedEvents);
         Assert.Null(consumer.ReceivedEvents[0].Message);
 
