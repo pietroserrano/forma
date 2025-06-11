@@ -7,6 +7,6 @@
     <owners>Forma Team</owners>
     <description>Chain of Responsibility pattern implementation for .NET with DI support</description>
     <tags>Chain Responsibility Pattern Microsoft Extensions DependencyInjection ChainOfResponsibility</tags>
-    <repository type="git" url="https://github.com/your-org/Forma" />
+    <repository type="git" url="https://github.com/pietroserrano/forma" />
   </metadata>
 </package>

@@ -4,7 +4,7 @@
 
 > Build composable, decoupled, and maintainable application flows using clean architectural principles.
 
-[![Build and Test](https://github.com/your-org/forma/actions/workflows/build-test.yml/badge.svg)](https://github.com/your-org/forma/actions/workflows/build-test.yml)
+[![Build and Test](https://github.com/pietroserrano/forma/actions/workflows/build-test.yml/badge.svg)](https://github.com/pietroserrano/forma/actions/workflows/build-test.yml)
 
 ---
 
