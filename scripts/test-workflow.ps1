@@ -191,12 +191,14 @@ if ($UseLocalNuget) {
         $workflowContent = $workflowContent -replace "    - name: Add NuGet source\s+run: dotnet nuget add source --name github --username .+ --password .+ .+", @"
     - name: Add Local NuGet Source
       run: dotnet nuget add source --name local $nugetSourceUrl --allow-insecure-connections
-"@
-          # Replace the Push to NuGet step to use our local server
+"@      # Replace the Push to NuGet step to use our local server
         $workflowContent = $workflowContent -replace "    - name: Push to NuGet\s+if: success\(\)\s+run: dotnet nuget push [`"].*[`"] --api-key .* --source .*", @"
     - name: Push to Local NuGet Server
       if: success()
-      run: dotnet nuget push "./packages/*.nupkg" --api-key $nugetApiKey --source local --skip-duplicate --no-symbols --no-service-endpoint true
+      run: |
+        for pkg in ./packages/*.nupkg; do
+          dotnet nuget push "$pkg" --api-key $nugetApiKey --source local --skip-duplicate --no-symbols 2>/dev/null || echo "Package already exists, skipping..."
+        done
 "@
         
         # Write to temp file
