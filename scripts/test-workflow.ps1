@@ -24,8 +24,7 @@ param(
     [string]$Version = "1.0.0-test",
     
     [Parameter(Mandatory=$false)]
-    [string]$Component = "chains",
-    
+    [string]$Component = "chains",    
     [Parameter(Mandatory=$false)]
     [switch]$UseLocalNuget,
     
@@ -33,7 +32,13 @@ param(
     [string]$NugetContainerName = "local-nuget-server",
     
     [Parameter(Mandatory=$false)]
-    [string]$NugetServerPort = "5555"
+    [string]$NugetServerPort = "5555",
+
+    [Parameter(Mandatory=$false)]
+    [string]$NugetApiKey = "TEST-API-KEY",
+
+    [Parameter(Mandatory=$false)]
+    [string]$NugetSource = "https://api.nuget.org/v3/index.json"
 )
 
 # Check if Docker is running
@@ -167,15 +172,15 @@ else {
 
 # Handle local NuGet server if requested
 $localNugetRunning = $false
-$nugetSourceUrl = "https://api.nuget.org/v3/index.json"
-$nugetApiKey = "fake-api-key"
+$nugetSourceUrl = $NugetSource
+$nugetApiKeyValue = $NugetApiKey
 
 if ($UseLocalNuget) {
     $localNugetRunning = Start-LocalNugetServer -ContainerName $NugetContainerName -Port $NugetServerPort
     
     if ($localNugetRunning) {
         $nugetSourceUrl = "http://localhost:${NugetServerPort}/v3/index.json"
-        $nugetApiKey = "TEST-API-KEY"
+        $nugetApiKeyValue = "TEST-API-KEY"
         
         # Create a temporary workflow file with the modified NuGet source
         $tempFolder = Join-Path $env:TEMP "forma-workflow-temp"
@@ -185,14 +190,16 @@ if ($UseLocalNuget) {
         
         $originalWorkflowPath = Join-Path $PSScriptRoot ".." $workflowFile
         $tempWorkflowPath = Join-Path $tempFolder (Split-Path $workflowFile -Leaf)
-        
-        # Read original workflow
-        $workflowContent = Get-Content -Path $originalWorkflowPath -Raw        # Replace the GitHub NuGet source with our local source
-        $workflowContent = $workflowContent -replace "    - name: Add NuGet source\s+run: dotnet nuget add source --name github --username .+ --password .+ .+", @"
+          # Read original workflow
+        $workflowContent = Get-Content -Path $originalWorkflowPath -Raw        
+          # Replace the NuGet source with our local source
+        $workflowContent = $workflowContent -replace "    - name: Add NuGet Source\s+run: dotnet nuget add source .* --name nuget-org", @"
     - name: Add Local NuGet Source
       run: dotnet nuget add source --name local $nugetSourceUrl --allow-insecure-connections
-"@      # Replace the Push to NuGet step to use our local server
-        $workflowContent = $workflowContent -replace "    - name: Push to NuGet\s+if: success\(\)\s+run: dotnet nuget push [`"].*[`"] --api-key .* --source .*", @"
+"@
+        
+        # Replace the Push to NuGet step to use our local server
+        $workflowContent = $workflowContent -replace "    - name: Push to NuGet\s+if: success\(\)\s+run: dotnet nuget push [`"].*[`"] --api-key .* --source .* --skip-duplicate", @"
     - name: Push to Local NuGet Server
       if: success()
       run: |
@@ -218,11 +225,10 @@ if ($UseLocalNuget) {
 $eventFile = Join-Path $env:TEMP "github-event-$([Guid]::NewGuid().ToString()).json"
 $eventJson | Set-Content -Path $eventFile
 
-Write-Host "Testing workflow type '$WorkflowType' with tag '$tagName'..." -ForegroundColor Yellow
-
-# Run act and simulate a tag push event
+Write-Host "Testing workflow type '$WorkflowType' with tag '$tagName'..." -ForegroundColor Yellow    # Run act and simulate a tag push event
 try {
-    $actCommand = "act push --eventpath $eventFile -W $workflowFile --secret NUGET_API_KEY=$nugetApiKey --container-architecture linux/amd64"
+    # Add both required secrets for NuGet
+    $actCommand = "act push --eventpath $eventFile -W $workflowFile --secret NUGET_API_KEY=$nugetApiKey --secret NUGET_SOURCE=$nugetSourceUrl --container-architecture linux/amd64"
     
     Write-Host "Act command: $actCommand" -ForegroundColor Cyan
     
