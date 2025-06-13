@@ -4,9 +4,15 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
   </ItemGroup>
 
-  <ItemGroup>
+  <!-- Riferimento condizionale: progetto in locale, pacchetto NuGet in cloud -->
+  <ItemGroup Condition="'$(UseProjectReferences)' == 'true'">
     <ProjectReference Include="..\Forma.Core\Forma.Core.csproj" />
   </ItemGroup>
+  
+  <ItemGroup Condition="'$(UseProjectReferences)' != 'true'">
+    <PackageReference Include="Forma.Core" Version="$(FormaVersion)" />
+  </ItemGroup>
+  
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- TargetFramework e Nullable sono definiti in Directory.Build.props -->

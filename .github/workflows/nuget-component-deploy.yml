@@ -44,11 +44,11 @@ jobs:
       
     - name: Pack Chains
       if: steps.get_info.outputs.COMPONENT == 'chains'
-      run: dotnet pack src/Forma.Chains/Forma.Chains.csproj -c Release -o packages
+      run: dotnet pack src/Forma.Chains/Forma.Chains.csproj -c Release -o packages -p:UseProjectReferences=false
       
     - name: Pack PubSub InMemory
       if: steps.get_info.outputs.COMPONENT == 'pubsub'
-      run: dotnet pack src/Forma.PubSub.InMemory/Forma.PubSub.InMemory.csproj -c Release -o packages
+      run: dotnet pack src/Forma.PubSub.InMemory/Forma.PubSub.InMemory.csproj -c Release -o packages -p:UseProjectReferences=false
       
     - name: Push to NuGet
       run: dotnet nuget push "./packages/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json

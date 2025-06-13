@@ -90,8 +90,10 @@ Pushing tags automatically triggers GitHub Actions workflows that:
 
 1. Build the projects
 2. Run the tests
-3. Package the projects as NuGet packages
+3. Package the projects as NuGet packages with `-p:UseProjectReferences=false` to use package references instead of project references
 4. Publish the packages to NuGet.org
+
+> **Note**: The workflows are configured to use the `UseProjectReferences=false` property when creating packages. This ensures that each NuGet package references other Forma packages correctly rather than using project references, which is essential for published packages to work properly. For more details on this approach, see the [Project vs NuGet References guide](./riferimenti-progetti-vs-nuget.md).
 
 ## Testing Releases Locally
 

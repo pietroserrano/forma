@@ -32,13 +32,13 @@ jobs:
       run: dotnet test --configuration Release --no-build
       
     - name: Pack Core
-      run: dotnet pack src/Forma.Core/Forma.Core.csproj -c Release -o packages
+      run: dotnet pack src/Forma.Core/Forma.Core.csproj -c Release -o packages -p:UseProjectReferences=false
       
     - name: Pack Mediator
-      run: dotnet pack src/Forma.Mediator/Forma.Mediator.csproj -c Release -o packages
+      run: dotnet pack src/Forma.Mediator/Forma.Mediator.csproj -c Release -o packages -p:UseProjectReferences=false
       
     - name: Pack Decorator
-      run: dotnet pack src/Forma.Decorator/Forma.Decorator.csproj -c Release -o packages
+      run: dotnet pack src/Forma.Decorator/Forma.Decorator.csproj -c Release -o packages -p:UseProjectReferences=false
     
     - name: Add NuGet Source
       run: dotnet nuget add source ${{ secrets.NUGET_SOURCE }} --name nuget-org

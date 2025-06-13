@@ -9,8 +9,13 @@
     </AssemblyAttribute>
   </ItemGroup>
 
-  <ItemGroup>
+  <!-- Riferimento condizionale: progetto in locale, pacchetto NuGet in cloud -->
+  <ItemGroup Condition="'$(UseProjectReferences)' == 'true'">
     <ProjectReference Include="..\Forma.Core\Forma.Core.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(UseProjectReferences)' != 'true'">
+    <PackageReference Include="Forma.Core" Version="$(FormaVersion)" />
   </ItemGroup>
 
   <ItemGroup>

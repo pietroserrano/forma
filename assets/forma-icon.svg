@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="200" height="200" fill="#5D87E8" rx="10" ry="10"/>
+  
+  <!-- Central connecting element (mediator pattern) -->
+  <circle cx="100" cy="100" r="30" fill="#FFFFFF" opacity="0.9"/>
+  
+  <!-- Decorator pattern (ring around) -->
+  <circle cx="100" cy="100" r="50" stroke="#FFFFFF" stroke-width="5" fill="none" opacity="0.8"/>
+  
+  <!-- Connected nodes representing patterns (simplified) -->
+  <g>
+    <circle cx="100" cy="50" r="15" fill="#FF5252" opacity="0.9"/>
+    <circle cx="100" cy="150" r="15" fill="#43A047" opacity="0.9"/>
+    <circle cx="50" cy="100" r="15" fill="#FFC107" opacity="0.9"/>
+    <circle cx="150" cy="100" r="15" fill="#00BCD4" opacity="0.9"/>
+  </g>
+  
+  <!-- Text element -->
+  <text x="100" y="105" font-size="36" font-family="Segoe UI, Arial, sans-serif" font-weight="bold" fill="#5D87E8" text-anchor="middle" dominant-baseline="middle">F</text>
+</svg>

@@ -3,13 +3,17 @@
   <metadata>
     <id>Forma.Core</id>
     <version>1.0.0</version>
-    <authors>Pietro Serrano</authors>
-    <owners>pserrano</owners>
+    <authors>Pietro Serrano</authors>    <owners>pserrano</owners>
     <license type="expression">MIT</license>
     <projectUrl>https://github.com/pietroserrano/forma</projectUrl>
+    <icon>images/icon.png</icon>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Core abstractions and building blocks for Forma pattern-based architecture in .NET.</description>
     <tags>mediator decorator pipeline dotnet patterns forma</tags>
-    <repository type="git" url="https://github.com/pietroserrano/forma" />
-  </metadata>
+    <repository type="git" url="https://github.com/pietroserrano/forma" />  </metadata>
+  <files>
+    <!-- Temporaneamente utilizziamo l'SVG, ma questo dovrebbe essere convertito in PNG -->
+    <!-- Per il rilascio pubblico, converti l'SVG in PNG usando le istruzioni in assets\icon-notes.md -->
+    <file src="..\..\assets\forma-icon.svg" target="images\icon.png" />
+  </files>
 </package>

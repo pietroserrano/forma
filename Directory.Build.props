@@ -8,8 +8,27 @@
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Version>1.0.0</Version>
+    <!-- Rimozione della versione esplicita, gestita da Nerdbank.GitVersioning -->
+    <!-- <Version>1.0.0</Version> -->
     <RepositoryUrl>https://github.com/pietroserrano/forma</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    
+    <!-- Controlla se usare riferimenti ai progetti o pacchetti NuGet -->
+    <!-- Per default, in sviluppo locale, usiamo i riferimenti ai progetti -->
+    <UseProjectReferences Condition="'$(UseProjectReferences)' == ''">true</UseProjectReferences>
+    
+    <!-- Versione dei pacchetti NuGet da usare quando UseProjectReferences=false -->
+    <!-- Definisce la versione da usare per i riferimenti ai pacchetti NuGet -->
+    <!-- Supporto per versioni standard e preview -->
+    <FormaVersion Condition="'$(FormaVersion)' == ''">1.0.0-preview.*</FormaVersion>
+    <!-- Per usare una versione stabile invece di preview: -->
+    <!-- <FormaVersion Condition="'$(FormaVersion)' == ''">1.0.*</FormaVersion> -->
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nerdbank.GitVersioning" Version="3.6.133">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
 </Project>

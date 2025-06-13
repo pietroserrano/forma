@@ -18,7 +18,9 @@
 	<ItemGroup>
 		<Using Include="Xunit" />
 	</ItemGroup>
-	<ItemGroup>
+
+	<!-- Riferimenti condizionali: progetti in locale, pacchetti NuGet in cloud -->
+	<ItemGroup Condition="'$(UseProjectReferences)' == 'true'">
 		<ProjectReference Include="..\..\src\Forma.Core\Forma.Core.csproj" />
 		<ProjectReference Include="..\..\src\Forma.Mediator\Forma.Mediator.csproj" />
 		<ProjectReference Include="..\..\src\Forma.Decorator\Forma.Decorator.csproj" />
@@ -26,9 +28,16 @@
 		<ProjectReference Include="..\..\src\Forma.Chains\Forma.Chains.csproj" />
 	</ItemGroup>
 
+	<ItemGroup Condition="'$(UseProjectReferences)' != 'true'">
+		<PackageReference Include="Forma.Core" Version="$(FormaVersion)" />
+		<PackageReference Include="Forma.Mediator" Version="$(FormaVersion)" />
+		<PackageReference Include="Forma.Decorator" Version="$(FormaVersion)" />
+		<PackageReference Include="Forma.PubSub.InMemory" Version="$(FormaVersion)" />
+		<PackageReference Include="Forma.Chains" Version="$(FormaVersion)" />
+	</ItemGroup>
+
 	<ItemGroup>
 	  <Folder Include="PubSub\" />
 	  <Folder Include="PubSub\Channels\" />
 	</ItemGroup>
-
 </Project>

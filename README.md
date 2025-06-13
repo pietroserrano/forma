@@ -1,5 +1,9 @@
 # Forma
 
+<div align="center">
+  <img src="assets/forma-icon.svg" alt="Forma Logo" width="200">
+</div>
+
 **Forma** is a lightweight and modular .NET library that provides abstractions and infrastructure for implementing common behavioral design patterns such as **Mediator**, **Decorator**, **Pipeline**, and more.
 
 > Build composable, decoupled, and maintainable application flows using clean architectural principles.
