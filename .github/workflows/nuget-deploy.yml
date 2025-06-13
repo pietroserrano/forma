@@ -17,15 +17,10 @@ jobs:
       with:
         dotnet-version: 9.0.x
         
-    - name: Extract version from tag
-      id: get_version
-      run: echo "VERSION=$(echo ${GITHUB_REF#refs/tags/v} | sed 's/-core$//')" >> $GITHUB_OUTPUT
-      
-    - name: Update version in Directory.Build.props
-      run: |
-        if [ -f Directory.Build.props ]; then
-          sed -i "s/<Version>.*<\/Version>/<Version>${{ steps.get_version.outputs.VERSION }}<\/Version>/" Directory.Build.props
-        fi
+    # Nerdbank.GitVersioning gestisce automaticamente il versioning
+    - name: Extract core tag
+      id: get_info
+      run: echo "COMPONENT=core" >> $GITHUB_OUTPUT
         
     - name: Restore dependencies
       run: dotnet restore

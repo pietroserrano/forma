@@ -18,11 +18,10 @@ jobs:
       with:
         dotnet-version: 9.0.x
     
-    - name: Extract version and component from tag
+    - name: Extract component from tag
       id: get_info
       run: |
         REF="${GITHUB_REF#refs/tags/v}"
-        echo "VERSION=$(echo $REF | cut -d'-' -f1)" >> $GITHUB_OUTPUT
         echo "COMPONENT=$(echo $REF | cut -d'-' -f2)" >> $GITHUB_OUTPUT
         
     - name: Restore dependencies
@@ -41,15 +40,7 @@ jobs:
       run: |
         dotnet test tests/Forma.Tests/Forma.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~Forma.Tests.PubSub"
     
-    - name: Update version for Chains
-      if: steps.get_info.outputs.COMPONENT == 'chains'
-      run: |
-        sed -i "s/<Version>.*<\/Version>/<Version>${{ steps.get_info.outputs.VERSION }}<\/Version>/" src/Forma.Chains/Forma.Chains.csproj
-      
-    - name: Update version for PubSub
-      if: steps.get_info.outputs.COMPONENT == 'pubsub'
-      run: |
-        sed -i "s/<Version>.*<\/Version>/<Version>${{ steps.get_info.outputs.VERSION }}<\/Version>/" src/Forma.PubSub.InMemory/Forma.PubSub.InMemory.csproj
+    # Nerdbank.GitVersioning gestisce automaticamente il versioning, quindi non è più necessario aggiornare manualmente le versioni
       
     - name: Pack Chains
       if: steps.get_info.outputs.COMPONENT == 'chains'
