@@ -1,8 +1,7 @@
 name: NuGet Component Package Deploy
 
 on:
-  # Rimuoviamo i trigger sui tag poiché utilizziamo Nerdbank.GitVersioning
-  # Affidiamoci ai branch e alle esecuzioni manuali
+  # Utilizziamo solo il workflow_dispatch per avviare manualmente il deploy
   workflow_dispatch:
     inputs:
       component:
@@ -22,9 +21,26 @@ on:
           - stable
 
 jobs:
+  # Verifica che i pacchetti core siano disponibili prima di procedere
+  check-core-packages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Core Packages Availability
+        run: |
+          CORE_VERSION=$(curl -s "https://api.nuget.org/v3-flatcontainer/forma.core/index.json" | jq -r '.versions[-1]')
+          MEDIATOR_VERSION=$(curl -s "https://api.nuget.org/v3-flatcontainer/forma.mediator/index.json" | jq -r '.versions[-1]')
+          DECORATOR_VERSION=$(curl -s "https://api.nuget.org/v3-flatcontainer/forma.decorator/index.json" | jq -r '.versions[-1]')
+          
+          echo "Core: $CORE_VERSION, Mediator: $MEDIATOR_VERSION, Decorator: $DECORATOR_VERSION"
+          
+          if [ -z "$CORE_VERSION" ] || [ -z "$MEDIATOR_VERSION" ] || [ -z "$DECORATOR_VERSION" ]; then
+            echo "One or more core packages are missing on NuGet"
+            exit 1
+          fi
+
   deploy:
     runs-on: ubuntu-latest
-    # Usa i workflow_call necessari per attendere completamento dei core packages
+    needs: [check-core-packages]
     
     steps:
     - uses: actions/checkout@v3
@@ -45,13 +61,21 @@ jobs:
     - name: Determine component
       id: get_info
       run: |
-        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-          REF="${GITHUB_REF#refs/tags/v}"
-          COMPONENT=$(echo $REF | cut -d'-' -f2)
-        else
-          COMPONENT=${{ github.event.inputs.component }}
-        fi
+        # Prendiamo il componente direttamente dagli input
+        COMPONENT=${{ github.event.inputs.component }}
         echo "COMPONENT=$COMPONENT" >> $GITHUB_OUTPUT
+        
+    - name: Set release type
+      id: release_type
+      run: |
+        # Prendiamo il tipo di release dagli input
+        echo "RELEASE_TYPE=${{ github.event.inputs.releaseType }}" >> $GITHUB_OUTPUT
+        
+    - name: Display version info
+      run: |
+        echo "Building Component: ${{ steps.get_info.outputs.COMPONENT }}"
+        echo "Version: ${{ steps.nbgv.outputs.NuGetPackageVersion }}"
+        echo "Release Type: ${{ steps.release_type.outputs.RELEASE_TYPE }}"
         
     - name: Restore dependencies
       run: dotnet restore
@@ -68,9 +92,7 @@ jobs:
       if: steps.get_info.outputs.COMPONENT == 'pubsub'
       run: |
         dotnet test tests/Forma.Tests/Forma.Tests.csproj --configuration Release --no-build --filter "FullyQualifiedName~Forma.Tests.PubSub"
-    
-    # Nerdbank.GitVersioning gestisce automaticamente il versioning, quindi non è più necessario aggiornare manualmente le versioni
-      
+        
     - name: Pack Chains
       if: steps.get_info.outputs.COMPONENT == 'chains'
       run: dotnet pack src/Forma.Chains/Forma.Chains.csproj -c Release -o packages -p:UseProjectReferences=false
@@ -79,6 +101,9 @@ jobs:
       if: steps.get_info.outputs.COMPONENT == 'pubsub'
       run: dotnet pack src/Forma.PubSub.InMemory/Forma.PubSub.InMemory.csproj -c Release -o packages -p:UseProjectReferences=false
       
+    - name: Add NuGet Source
+      run: dotnet nuget add source ${{ secrets.NUGET_SOURCE }} --name nuget-org
+      
     - name: Push to NuGet
-      run: dotnet nuget push "./packages/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
       if: success()
+      run: dotnet nuget push "./packages/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source nuget-org --skip-duplicate

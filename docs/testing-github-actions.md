@@ -12,17 +12,34 @@ This document explains how to test Forma's GitHub Actions workflows locally befo
 
 ## Using the Test Scripts
 
-We've created scripts to simplify local workflow testing:
+We've created scripts to simplify local workflow testing, now updated to work with Nerdbank.GitVersioning:
 
 ### PowerShell (Windows)
 
-```powershell
-# Test the core release workflow (Forma.Core, Forma.Mediator, Forma.Decorator)
-.\scripts\test-workflow.ps1 -WorkflowType core -Version 2.0.0-test
+#### Testing Core Components
 
-# Test a specific component release workflow
-.\scripts\test-workflow.ps1 -WorkflowType component -Component chains -Version 1.3.0-test
-.\scripts\test-workflow.ps1 -WorkflowType component -Component pubsub -Version 1.1.0-test
+```powershell
+# Test core package deployment with default settings (preview release)
+.\scripts\test-workflow.ps1 -WorkflowType core
+
+# Test core package deployment with stable release type
+.\scripts\test-workflow.ps1 -WorkflowType core -ReleaseType stable
+
+# Test by simulating push to a specific branch
+# Stable branch:
+.\scripts\test-workflow.ps1 -WorkflowType core -SimulateBranch "v1.0"
+# Preview branch:
+.\scripts\test-workflow.ps1 -WorkflowType core -SimulateBranch "release/v1.0"
+```
+
+#### Testing Specific Components
+
+```powershell
+# Test component deployment (chains)
+.\scripts\test-workflow.ps1 -WorkflowType component -Component chains
+
+# Test component deployment (pubsub) with stable release type
+.\scripts\test-workflow.ps1 -WorkflowType component -Component pubsub -ReleaseType stable
 ```
 
 ### Bash (Linux/macOS)
@@ -32,12 +49,28 @@ We've created scripts to simplify local workflow testing:
 chmod +x ./scripts/test-workflow.sh
 
 # Test the core release workflow
-./scripts/test-workflow.sh -t core -v 2.0.0-test
+./scripts/test-workflow.sh -t core
 
 # Test a specific component release workflow
-./scripts/test-workflow.sh -t component -c chains -v 1.3.0-test
-./scripts/test-workflow.sh -t component -c pubsub -v 1.1.0-test
+./scripts/test-workflow.sh -t component -c chains
 ```
+
+## Testing with Local NuGet Server
+
+You can test the full publication process using a local NuGet server:
+
+```powershell
+# Test with local NuGet server (default port 5555)
+.\scripts\test-workflow.ps1 -WorkflowType core -UseLocalNuget
+
+# Test with custom port
+.\scripts\test-workflow.ps1 -WorkflowType component -Component chains -UseLocalNuget -NugetServerPort 5000
+```
+
+The script will:
+- Start a Docker container running a lightweight NuGet server (BaGet)
+- Configure the workflow to publish packages to this local server
+- Allow you to verify the packages are correctly published
 
 ## How It Works
 
@@ -45,10 +78,26 @@ The scripts perform the following operations:
 
 1. Verify that Docker is running
 2. Verify that `act` is installed
-3. Create a temporary event file that simulates a tag push
-4. Run the workflow with `--dry-run` to show what would happen
-5. Ask for confirmation before actually running the workflow
-6. Run the workflow in a Docker container
+3. Create a temporary event file that simulates:
+   - A workflow dispatch event with inputs (for manual execution)
+   - Or a branch push event (when using -SimulateBranch)
+4. If testing components, mock the check for core packages' availability
+5. Run the workflow with `--dry-run` to show what would happen
+6. Execute the workflow in a Docker container
+
+## Understanding Different Simulation Types
+
+### Branch-Based Testing (Core Components)
+
+- Using `-SimulateBranch "v1.0"` simulates a push to stable branch, generating a stable version
+- Using `-SimulateBranch "release/v1.0"` simulates a push to preview branch, generating a preview version
+- The version is automatically determined by Nerdbank.GitVersioning based on the branch name
+
+### Manual Workflow Testing
+
+- Without `-SimulateBranch`, the script simulates a manual workflow trigger
+- Use `-ReleaseType` to specify whether to generate preview or stable versions
+- For components, use `-Component` to specify which component to test
 
 ## Limitations
 
@@ -64,3 +113,24 @@ If you encounter issues:
 2. Verify that `act` is installed correctly
 3. For Docker image issues, try `act -P ubuntu-latest=nektos/act-environments-ubuntu:18.04`
 4. For more memory: `act --container-options="-e DOCKER_OPTS=--memory=4g"`
+
+## Integration with Nerdbank.GitVersioning
+
+The test script has been updated to work with Nerdbank.GitVersioning's version management:
+
+1. **Branch-Based Versioning**:
+   - The version is determined by branch name rather than explicit version tags
+   - `v*` branches generate stable versions
+   - `release/v*` branches generate preview versions with appropriate suffixes
+
+2. **Workflow Changes**:
+   - Core components are deployed on pushes to version branches and manual triggers
+   - Specific components are only deployed via manual triggers
+   - The dependency between core and component packages is maintained
+
+To check what version would be generated by Nerdbank.GitVersioning in your current branch:
+
+```powershell
+dotnet tool install -g nbgv
+nbgv get-version
+```

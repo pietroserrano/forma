@@ -2,6 +2,74 @@
 
 This document describes the release strategy for Forma libraries and provides instructions on how to perform new releases.
 
+## Quick Start: Releasing with Git Workflow
+
+### Releasing Preview Versions
+
+1. **Create a release branch**:
+   ```powershell
+   git checkout main
+   git pull
+   git checkout -b release/v1.0
+   ```
+
+2. **Verify the preview version**:
+   ```powershell
+   dotnet build /p:GetBuildVersion=true
+   # Or, for more detailed version info:
+   dotnet tool install -g nbgv
+   nbgv get-version
+   ```
+   With our Nerdbank.GitVersioning configuration, this should produce a version like `1.0.0-preview`.
+
+3. **Make necessary adjustments** to prepare for release (documentation updates, etc.)
+
+4. **Commit your changes**:
+   ```powershell
+   git commit -a -m "Prepare for 1.0.0-preview release"
+   ```
+
+5. **Push the branch** to trigger the CI/CD pipeline:
+   ```powershell
+   git push -u origin release/v1.0
+   ```
+
+6. **For subsequent preview releases** (e.g., preview.1, preview.2):
+   - Make additional changes to the release branch
+   - Commit and push the changes
+   - The version number will increment automatically (e.g., 1.0.0-preview.1, 1.0.0-preview.2)
+
+### Promoting to Stable Release
+
+When you're ready to promote a preview to a stable release:
+
+1. **Create a version branch** matching the pattern in `publicReleaseRefSpec`:
+   ```powershell
+   git checkout release/v1.0
+   git checkout -b v1.0
+   git push -u origin v1.0
+   ```
+
+2. **Verify the stable version**:
+   ```powershell
+   dotnet build /p:GetBuildVersion=true
+   # Or: nbgv get-version
+   ```
+   This should now produce a clean version like `1.0.0` (without the preview tag).
+
+3. **Merge into main** (optional, but recommended):
+   ```powershell
+   git checkout main
+   git merge v1.0
+   git push
+   ```
+
+4. **Create a release tag** (optional, for better tracking):
+   ```powershell
+   git tag -a v1.0.0 -m "Release version 1.0.0"
+   git push origin v1.0.0
+   ```
+
 ## Release Strategies
 
 Forma adopts a **hybrid approach** for releasing its NuGet packages:
@@ -104,3 +172,41 @@ Before officially publishing, you can test GitHub Actions workflows locally usin
 - Core component releases should be planned together to ensure compatibility
 - Independent components can have dependencies on specific versions of core components
 - If an independent component needs a new core feature, a new version of the core components should be released first
+
+## Gestione delle Versioni con Nerdbank.GitVersioning e GitHub Actions
+
+Con l'integrazione di Nerdbank.GitVersioning nei workflow di GitHub Actions:
+
+### Trigger dei Workflow
+
+- **Workflow per i componenti core** si attivano automaticamente su:
+  - Push ai branch `v*` (es. v1.0) → rilasci stabili
+  - Push ai branch `release/v*` (es. release/v1.0) → rilasci preview
+  - Attivazione manuale tramite workflow_dispatch
+
+- **Workflow per i componenti specifici** si attivano solo tramite:
+  - Attivazione manuale (workflow_dispatch) specificando il componente e il tipo di rilascio
+
+### Concorrenza e Dipendenze
+
+- Il workflow dei componenti verifica che i pacchetti core siano disponibili prima di procedere
+- Questo garantisce che i componenti utilizzino le dipendenze core appropriate
+
+### Versionamento Automatico
+
+- Nerdbank.GitVersioning determina automaticamente la versione in base al branch/tag:
+  - Branch `release/v*` → versioni con suffisso "-preview"
+  - Branch `v*` → versioni stabili senza suffissi
+  - La numerazione incrementale (es. preview.1, preview.2) viene gestita automaticamente
+
+### Come Verificare la Versione Corrente
+
+Per verificare quale versione verrà generata dal tuo branch corrente:
+
+```powershell
+# Installa lo strumento Nerdbank.GitVersioning
+dotnet tool install -g nbgv
+
+# Visualizza le informazioni di versione
+nbgv get-version
+```

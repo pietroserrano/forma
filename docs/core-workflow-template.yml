@@ -3,11 +3,9 @@ name: NuGet Core Package Deploy
 on:
   push:
     branches:
-      - 'v*'
-      - 'release/v*'
-    tags:
-      - 'v*-core'
-      - 'v*'
+      - 'v*'         # Branch stabili (es. v1.0)
+      - 'release/v*' # Branch preview (es. release/v1.0)
+  # Rimuoviamo i trigger sui tag poiché utilizziamo Nerdbank.GitVersioning
   workflow_dispatch:
     inputs:
       releaseType:
@@ -18,18 +16,9 @@ on:
         options:
           - preview
           - stable
-      useProjectReferences:
-        description: 'Use project references instead of package references'
-        required: false
-        default: 'false'
-        type: choice
-        options:
-          - 'true'
-          - 'false'
 
 jobs:
-  core-build:  # Job ID for reference from other workflows
-    name: Build and Deploy
+  build-and-deploy:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.nbgv.outputs.SimpleVersion }}
@@ -55,9 +44,7 @@ jobs:
     - name: Set release type
       id: release_type
       run: |
-        if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-          echo "RELEASE_TYPE=stable" >> $GITHUB_OUTPUT
-        elif [[ "${{ github.ref }}" == refs/heads/v* ]]; then
+        if [[ "${{ github.ref }}" == refs/heads/v* ]]; then
           echo "RELEASE_TYPE=stable" >> $GITHUB_OUTPUT
         elif [[ "${{ github.ref }}" == refs/heads/release/* ]]; then
           echo "RELEASE_TYPE=preview" >> $GITHUB_OUTPUT
@@ -71,29 +58,22 @@ jobs:
         echo "Release Type: ${{ steps.release_type.outputs.RELEASE_TYPE }}"
         
     - name: Restore dependencies
-      run: dotnet restore Forma.sln
+      run: dotnet restore
       
     - name: Build
-      run: dotnet build Forma.sln --configuration Release --no-restore
+      run: dotnet build --configuration Release --no-restore
       
     - name: Test
-      run: dotnet test Forma.sln --configuration Release --no-build
-      
-    - name: Set UseProjectReferences value
-      id: project_refs
-      run: |
-        USE_PROJECT_REFS="${{ github.event.inputs.useProjectReferences || 'false' }}"
-        echo "USE_PROJECT_REFS=$USE_PROJECT_REFS" >> $GITHUB_OUTPUT
-        echo "Using project references: $USE_PROJECT_REFS"
+      run: dotnet test --configuration Release --no-build
       
     - name: Pack Core
-      run: dotnet pack src/Forma.Core/Forma.Core.csproj -c Release -o packages -p:UseProjectReferences=${{ steps.project_refs.outputs.USE_PROJECT_REFS }}
+      run: dotnet pack src/Forma.Core/Forma.Core.csproj -c Release -o packages -p:UseProjectReferences=false
       
     - name: Pack Mediator
-      run: dotnet pack src/Forma.Mediator/Forma.Mediator.csproj -c Release -o packages -p:UseProjectReferences=${{ steps.project_refs.outputs.USE_PROJECT_REFS }}
+      run: dotnet pack src/Forma.Mediator/Forma.Mediator.csproj -c Release -o packages -p:UseProjectReferences=false
       
     - name: Pack Decorator
-      run: dotnet pack src/Forma.Decorator/Forma.Decorator.csproj -c Release -o packages -p:UseProjectReferences=${{ steps.project_refs.outputs.USE_PROJECT_REFS }}
+      run: dotnet pack src/Forma.Decorator/Forma.Decorator.csproj -c Release -o packages -p:UseProjectReferences=false
     
     - name: Add NuGet Source
       run: dotnet nuget add source ${{ secrets.NUGET_SOURCE }} --name nuget-org

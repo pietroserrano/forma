@@ -1,36 +1,51 @@
 #!/bin/bash
 
-# test-workflow.sh - Script for testing GitHub Actions locally with act
+# test-workf# Function to show script usage
+show_usage() {
+    echo "Usage: $0 -t <workflow_type> [-v <version>] [-c <component>] [-r <release_type>] [-b <branch>] [--local-nuget] [--nuget-container <n>] [--nuget-port <port>]".sh - Script for testing GitHub Actions locally with act
+#
+# Questo script è stato aggiornato per supportare i nuovi workflow basati su Nerdbank.GitVersioning
+# che utilizzano i branch invece dei tag per determinare il tipo di release.
 #
 # Examples:
-#   # Test core package deployment workflow with default settings
+#   # Test core package deployment workflow with default settings (preview release)
 #   ./test-workflow.sh -t core
 #
-#   # Test component package deployment workflow for a specific component
-#   ./test-workflow.sh -t component -c pubsub -v 1.2.3-test
+#   # Test core package deployment workflow for stable release
+#   ./test-workflow.sh -t core -r stable
+#
+#   # Test core package deployment workflow simulating a branch push
+#   ./test-workflow.sh -t core -b "v1.0"            # For stable release branch
+#   ./test-workflow.sh -t core -b "release/v1.0"    # For preview release branch
+#
+#   # Test component package deployment workflow (manual trigger only)
+#   ./test-workflow.sh -t component -c chains
 #
 #   # Test with local NuGet server
 #   ./test-workflow.sh -t core --local-nuget
 #
 #   # Test with custom local NuGet server settings
-#   ./test-workflow.sh -t component -c pubsub --local-nuget --nuget-port 5000
+#   ./test-workflow.sh -t component -c chains --local-nuget --nuget-port 5000
 
 # Function to show script usage
 show_usage() {
     echo "Usage: $0 -t <workflow_type> [-v <version>] [-c <component>] [--local-nuget] [--nuget-container <name>] [--nuget-port <port>]"
-    echo ""
-    echo "Parameters:"
+    echo ""    echo "Parameters:"
     echo "  -t, --type             Workflow type (core or component)"
     echo "  -v, --version          Version to use for the test (default: 1.0.0-test)"
     echo "  -c, --component        Component for component workflow (default: chains)"
+    echo "  -r, --release-type     Release type (preview or stable, default: preview)"
+    echo "  -b, --branch           Simulate a branch push (e.g. v1.0 or release/v1.0)"
     echo "  --local-nuget          Use local NuGet server in Docker"
     echo "  --nuget-container      Name for the NuGet server container (default: local-nuget-server)"
     echo "  --nuget-port           Port for the NuGet server (default: 5555)"
-    echo ""
-    echo "Examples:"
-    echo "  $0 -t core"
-    echo "  $0 -t component -c pubsub -v 1.2.3-test"
-    echo "  $0 -t core --local-nuget"
+    echo ""    echo "Examples:"
+    echo "  $0 -t core                                    # Test core workflow with preview release"
+    echo "  $0 -t core -r stable                          # Test core workflow with stable release"
+    echo "  $0 -t core -b \"v1.0\"                         # Test core workflow simulating v1.0 branch push"
+    echo "  $0 -t core -b \"release/v1.0\"                 # Test core workflow simulating release/v1.0 branch push"
+    echo "  $0 -t component -c chains                     # Test component workflow for chains"
+    echo "  $0 -t core --local-nuget                      # Test using local NuGet server"
     echo "  $0 -t component -c chains --local-nuget --nuget-port 5000"
     exit 1
 }
@@ -39,6 +54,8 @@ show_usage() {
 WORKFLOW_TYPE=""
 VERSION="1.0.0-test"
 COMPONENT="chains"
+RELEASE_TYPE="preview"
+SIMULATE_BRANCH=""
 USE_LOCAL_NUGET=false
 NUGET_CONTAINER_NAME="local-nuget-server"
 NUGET_SERVER_PORT="5555"
@@ -58,6 +75,16 @@ while [[ $# -gt 0 ]]; do
             ;;
         -c|--component)
             COMPONENT="$2"
+            shift
+            shift
+            ;;
+        -r|--release-type)
+            RELEASE_TYPE="$2"
+            shift
+            shift
+            ;;
+        -b|--branch)
+            SIMULATE_BRANCH="$2"
             shift
             shift
             ;;
@@ -90,6 +117,11 @@ fi
 
 if [ "$WORKFLOW_TYPE" != "core" ] && [ "$WORKFLOW_TYPE" != "component" ]; then
     echo "Error: The workflow type must be 'core' or 'component'"
+    show_usage
+fi
+
+if [ "$RELEASE_TYPE" != "preview" ] && [ "$RELEASE_TYPE" != "stable" ]; then
+    echo "Error: The release type must be 'preview' or 'stable'"
     show_usage
 fi
 
@@ -176,16 +208,23 @@ stop_local_nuget_server() {
 
 # Determine which workflow to test and set parameters
 WORKFLOW_FILE=""
-EVENT_NAME="push"
+EVENT_NAME="workflow_dispatch"
 EVENT_FILE=$(mktemp)
 TEMP_WORKFLOW_FILE=""
 
 if [ "$WORKFLOW_TYPE" = "core" ]; then
     WORKFLOW_FILE=".github/workflows/nuget-deploy.yml"
-    TAG_NAME="v${VERSION}-core"
+else
+    WORKFLOW_FILE=".github/workflows/nuget-component-deploy.yml"
+fi
+
+# Create event JSON based on workflow type and simulation parameters
+if [ -n "$SIMULATE_BRANCH" ]; then
+    EVENT_NAME="push"
+    # Simulate branch push event
     cat > "$EVENT_FILE" <<EOF
 {
-  "ref": "refs/tags/$TAG_NAME",
+  "ref": "refs/heads/$SIMULATE_BRANCH",
   "repository": {
     "name": "forma",
     "owner": {
@@ -195,11 +234,12 @@ if [ "$WORKFLOW_TYPE" = "core" ]; then
 }
 EOF
 else
-    WORKFLOW_FILE=".github/workflows/nuget-component-deploy.yml"
-    TAG_NAME="v${VERSION}-${COMPONENT}"
+    # Use workflow_dispatch event
     cat > "$EVENT_FILE" <<EOF
 {
-  "ref": "refs/tags/$TAG_NAME",
+  "inputs": {
+    "releaseType": "$RELEASE_TYPE"
+  },
   "repository": {
     "name": "forma",
     "owner": {
@@ -240,10 +280,38 @@ if [ "$USE_LOCAL_NUGET" = true ]; then
     fi
 fi
 
-echo -e "\e[33mTesting workflow type '$WORKFLOW_TYPE' with tag '$TAG_NAME'...\e[0m"
+# Se stiamo testando il workflow dei component, dobbiamo simulare il job check-core-packages
+if [ "$WORKFLOW_TYPE" = "component" ] && [ -z "$TEMP_WORKFLOW_FILE" ]; then
+    TEMP_DIR=$(mktemp -d)
+    TEMP_WORKFLOW_FILE="${TEMP_DIR}/$(basename $WORKFLOW_FILE)"
+    
+    # Read original workflow
+    cat "$WORKFLOW_FILE" | sed '/jobs:/a\
+  # Job semplificato per test locale\
+  check-core-packages:\
+    runs-on: ubuntu-latest\
+    steps:\
+      - name: Mock Check Core Packages\
+        run: |\
+          echo "Simulating successful check of core packages..."\
+          exit 0\
+' > "$TEMP_WORKFLOW_FILE"
+    
+    WORKFLOW_FILE="$TEMP_WORKFLOW_FILE"
+    echo -e "\e[36mAdded mock job for component dependency checks\e[0m"
+fi
 
-# Run act and simulate a tag push event
-act_cmd="act push --eventpath $EVENT_FILE -W $WORKFLOW_FILE --secret NUGET_API_KEY=$NUGET_API_KEY --container-architecture linux/amd64"
+# Build appropriate message based on simulation type
+if [ -n "$SIMULATE_BRANCH" ]; then
+    echo -e "\e[33mTesting workflow type '$WORKFLOW_TYPE' simulating push to branch '$SIMULATE_BRANCH'...\e[0m"
+elif [ "$WORKFLOW_TYPE" = "core" ]; then
+    echo -e "\e[33mTesting '$WORKFLOW_TYPE' workflow with releaseType '$RELEASE_TYPE'...\e[0m"
+else
+    echo -e "\e[33mTesting '$WORKFLOW_TYPE' workflow for component '$COMPONENT' with releaseType '$RELEASE_TYPE'...\e[0m"
+fi
+
+# Run act and simulate the event
+act_cmd="act $EVENT_NAME --eventpath $EVENT_FILE -W $WORKFLOW_FILE --secret NUGET_API_KEY=$NUGET_API_KEY --container-architecture linux/amd64"
 
 # Show the command
 echo -e "\e[36mAct command: $act_cmd --dryrun\e[0m"
@@ -265,13 +333,13 @@ function cleanup_resources {
     if [ -f "$EVENT_FILE" ]; then
         rm "$EVENT_FILE"
     fi
+      # Cleanup temp workflow file if created
+    if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
+        rm -rf "$TEMP_DIR"
+    fi
     
-    # Cleanup temp workflow file if created
-    if [ "$USE_LOCAL_NUGET" = true ] && [ "$LOCAL_NUGET_RUNNING" = true ] && [ -n "$TEMP_DIR" ]; then
-        if [ -d "$TEMP_DIR" ]; then
-            rm -rf "$TEMP_DIR"
-        fi
-        
+    # Handle NuGet server if applicable
+    if [ "$USE_LOCAL_NUGET" = true ] && [ "$LOCAL_NUGET_RUNNING" = true ]; then
         # Ask if user wants to stop the NuGet server
         read -p "Do you want to stop the local NuGet server? [y/N] " stop_server
         if [[ $stop_server =~ ^[Yy]$ ]]; then

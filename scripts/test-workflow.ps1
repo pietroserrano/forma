@@ -1,10 +1,20 @@
 #!/usr/bin/env pwsh
 
 # test-workflow.ps1 - Script for testing GitHub Actions locally with act
+#
+# Questo script è stato aggiornato per supportare i nuovi workflow basati su Nerdbank.GitVersioning
+# che utilizzano i branch invece dei tag per determinare il tipo di release.
 # 
 # Examples:
 #   # Test core package deployment workflow with default settings
 #   .\test-workflow.ps1 -WorkflowType core
+#
+#   # Test core package deployment workflow specifying release type
+#   .\test-workflow.ps1 -WorkflowType core -ReleaseType stable
+#
+#   # Test core package deployment workflow simulating a branch push
+#   .\test-workflow.ps1 -WorkflowType core -SimulateBranch "v1.0"
+#   .\test-workflow.ps1 -WorkflowType core -SimulateBranch "release/v1.0"
 #
 #   # Test component package deployment workflow for chains
 #   .\test-workflow.ps1 -WorkflowType component -Component chains
@@ -24,7 +34,15 @@ param(
     [string]$Version = "1.0.0-test",
     
     [Parameter(Mandatory=$false)]
-    [string]$Component = "chains",    
+    [ValidateSet("preview", "stable")]
+    [string]$ReleaseType = "preview",
+    
+    [Parameter(Mandatory=$false)]
+    [string]$SimulateBranch = "",
+    
+    [Parameter(Mandatory=$false)]
+    [string]$Component = "chains",
+    
     [Parameter(Mandatory=$false)]
     [switch]$UseLocalNuget,
     
@@ -136,15 +154,17 @@ function Stop-LocalNugetServer {
 
 # Determine which workflow to test and set parameters
 $workflowFile = ""
-$eventName = "push"
 $eventJson = ""
 
 if ($WorkflowType -eq "core") {
     $workflowFile = ".github/workflows/nuget-deploy.yml"
-    $tagName = "v${Version}-core"
-    $eventJson = @"
+    
+    if ($SimulateBranch) {
+        # Simulate a branch push event
+        $branchRef = "refs/heads/$SimulateBranch"
+        $eventJson = @"
 {
-  "ref": "refs/tags/$tagName",
+  "ref": "$branchRef",
   "repository": {
     "name": "forma",
     "owner": {
@@ -153,13 +173,34 @@ if ($WorkflowType -eq "core") {
   }
 }
 "@
+    } else {
+        # Use workflow_dispatch with inputs
+        $eventJson = @"
+{
+  "inputs": {
+    "releaseType": "$ReleaseType",
+    "useProjectReferences": "true"
+  },
+  "repository": {
+    "name": "forma",
+    "owner": {
+      "name": "user"
+    }
+  }
+}
+"@
+    }
 }
 else {
     $workflowFile = ".github/workflows/nuget-component-deploy.yml"
-    $tagName = "v${Version}-${Component}"
+      # Component workflow only supports workflow_dispatch now
     $eventJson = @"
 {
-  "ref": "refs/tags/$tagName",
+  "inputs": {
+    "component": "$Component",
+    "releaseType": "$ReleaseType",
+    "useProjectReferences": "true"
+  },
   "repository": {
     "name": "forma",
     "owner": {
@@ -173,14 +214,14 @@ else {
 # Handle local NuGet server if requested
 $localNugetRunning = $false
 $nugetSourceUrl = $NugetSource
-$nugetApiKeyValue = $NugetApiKey
+$nugetApiKey = $NugetApiKey
 
 if ($UseLocalNuget) {
     $localNugetRunning = Start-LocalNugetServer -ContainerName $NugetContainerName -Port $NugetServerPort
     
     if ($localNugetRunning) {
         $nugetSourceUrl = "http://localhost:${NugetServerPort}/v3/index.json"
-        $nugetApiKeyValue = "TEST-API-KEY"
+        $nugetApiKey = "TEST-API-KEY"
         
         # Create a temporary workflow file with the modified NuGet source
         $tempFolder = Join-Path $env:TEMP "forma-workflow-temp"
@@ -190,16 +231,18 @@ if ($UseLocalNuget) {
         
         $originalWorkflowPath = Join-Path $PSScriptRoot ".." $workflowFile
         $tempWorkflowPath = Join-Path $tempFolder (Split-Path $workflowFile -Leaf)
-          # Read original workflow
+        
+        # Read original workflow
         $workflowContent = Get-Content -Path $originalWorkflowPath -Raw        
-          # Replace the NuGet source with our local source
+        
+        # Replace the NuGet source with our local source
         $workflowContent = $workflowContent -replace "    - name: Add NuGet Source\s+run: dotnet nuget add source .* --name nuget-org", @"
     - name: Add Local NuGet Source
       run: dotnet nuget add source --name local $nugetSourceUrl --allow-insecure-connections
 "@
         
         # Replace the Push to NuGet step to use our local server
-        $workflowContent = $workflowContent -replace "    - name: Push to NuGet\s+if: success\(\)\s+run: dotnet nuget push [`"].*[`"] --api-key .* --source .* --skip-duplicate", @"
+        $workflowContent = $workflowContent -replace "    - name: Push to NuGet\s+.*run: dotnet nuget push [`"].*[`"] --api-key .* --source .* --skip-duplicate", @"
     - name: Push to Local NuGet Server
       if: success()
       run: |
@@ -225,25 +268,57 @@ if ($UseLocalNuget) {
 $eventFile = Join-Path $env:TEMP "github-event-$([Guid]::NewGuid().ToString()).json"
 $eventJson | Set-Content -Path $eventFile
 
-Write-Host "Testing workflow type '$WorkflowType' with tag '$tagName'..." -ForegroundColor Yellow    # Run act and simulate a tag push event
+# Build appropriate message based on simulation type
+if ($SimulateBranch) {
+    Write-Host "Testing workflow type '$WorkflowType' simulating push to branch '$SimulateBranch'..." -ForegroundColor Yellow
+} elseif ($WorkflowType -eq "core") {
+    Write-Host "Testing '$WorkflowType' workflow with releaseType '$ReleaseType'..." -ForegroundColor Yellow
+} else {
+    Write-Host "Testing '$WorkflowType' workflow for component '$Component' with releaseType '$ReleaseType'..." -ForegroundColor Yellow
+}
+
 try {
-    # Add both required secrets for NuGet
-    $actCommand = "act push --eventpath $eventFile -W $workflowFile --secret NUGET_API_KEY=$nugetApiKey --secret NUGET_SOURCE=$nugetSourceUrl --container-architecture linux/amd64"
+    # Se stiamo testando il workflow dei component e non abbiamo già fatto un'esecuzione del core,
+    # dobbiamo prima iniettare il check-core-packages job simulandone il completamento
+    if ($WorkflowType -eq "component") {
+        # Modifichiamo temporaneamente il file di workflow per rimuovere la dipendenza
+        # o simulare un job check-core-packages che passa sempre
+        $tempWorkflowPath = Join-Path $env:TEMP "component-workflow-temp.yml"
+        $componentWorkflow = Get-Content -Path $workflowFile -Raw
+        
+        # Iniettiamo un job check-core-packages semplificato che passa subito
+        $componentWorkflow = $componentWorkflow -replace "jobs:", @"
+jobs:
+  # Job semplificato per test locale
+  check-core-packages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mock Check Core Packages
+        run: |
+          echo "Simulating successful check of core packages..."
+          exit 0
+"@
+        
+        Set-Content -Path $tempWorkflowPath -Value $componentWorkflow
+        $workflowFile = $tempWorkflowPath
+    }
+
+    # Build act command based on event type
+    $actCommand = if ($SimulateBranch) {
+        "act push --eventpath $eventFile -W $workflowFile --secret NUGET_API_KEY=$nugetApiKey --secret NUGET_SOURCE=$nugetSourceUrl --container-architecture linux/amd64"
+    } else {
+        "act workflow_dispatch --eventpath $eventFile -W $workflowFile --secret NUGET_API_KEY=$nugetApiKey --secret NUGET_SOURCE=$nugetSourceUrl --container-architecture linux/amd64"
+    }
     
     Write-Host "Act command: $actCommand" -ForegroundColor Cyan
     
     # Run act with --dryrun to see what will be executed
     Invoke-Expression "$actCommand --dryrun"
+      # Check and print the content of the event file for debugging
+    Write-Host "Event file content:" -ForegroundColor Cyan
+    Get-Content -Path $eventFile | Out-Host
     
-    # $confirmation = Read-Host "Do you want to proceed with the actual execution? [y/N]"
-    # if ($confirmation -eq 'Y' -or $confirmation -eq 'y') {
-    #     # Actually run act
-    #     Invoke-Expression $actCommand
-    # }
-    # else {
-    #     Write-Host "Execution cancelled." -ForegroundColor Yellow
-    # }
-
+    # Proceed with the execution
     Invoke-Expression $actCommand
 }
 catch {
@@ -255,21 +330,22 @@ finally {
         Remove-Item -Path $eventFile -Force
     }
     
-    # Cleanup temp workflow file if created
+    # Cleanup temp workflow files if created
     if ($UseLocalNuget -and $localNugetRunning) {
         $tempFolder = Join-Path $env:TEMP "forma-workflow-temp"
         if (Test-Path -Path $tempFolder) {
             Remove-Item -Path $tempFolder -Recurse -Force -ErrorAction SilentlyContinue
         }
-        
-        # Ask if user wants to stop the NuGet server
-        $stopServer = Read-Host "Do you want to stop the local NuGet server? [y/N]"
-        if ($stopServer -eq 'Y' -or $stopServer -eq 'y') {
-            Stop-LocalNugetServer -ContainerName $NugetContainerName
-        }
-        else {
-            Write-Host "NuGet server is still running at http://localhost:$NugetServerPort" -ForegroundColor Green
-            Write-Host "You can manage the container manually with 'docker stop/start/rm $NugetContainerName'" -ForegroundColor Yellow
-        }
+    }
+    
+    # Rimuovi il file di workflow temporaneo per i component test se esiste
+    $tempWorkflowPath = Join-Path $env:TEMP "component-workflow-temp.yml"
+    if (Test-Path -Path $tempWorkflowPath) {
+        Remove-Item -Path $tempWorkflowPath -Force -ErrorAction SilentlyContinue
+    }
+      # Ask if user wants to stop the NuGet server
+    if ($UseLocalNuget -and $localNugetRunning) {
+        Write-Host "NuGet server is still running at http://localhost:$NugetServerPort" -ForegroundColor Green
+        Write-Host "You can manage the container manually with 'docker stop/start/rm $NugetContainerName'" -ForegroundColor Yellow
     }
 }
