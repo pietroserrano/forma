@@ -7,6 +7,8 @@
     <!-- Package metadata -->
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
+    <Description>Forma module that provides support for the Mediator pattern in .NET.</Description>
+    <PackageTags>mediator messaging cqrs forma dotnet</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

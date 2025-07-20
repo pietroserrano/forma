@@ -7,6 +7,8 @@
     <!-- Package metadata -->
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
+    <Description>Forma module that provides a decorator infrastructure for .NET services.</Description>
+    <PackageTags>decorator pipeline behavior forma dotnet</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

@@ -7,6 +7,8 @@
     <!-- Package metadata -->
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
+    <Description>In-memory Publish-Subscribe implementation for Forma.</Description>
+    <PackageTags>pubsub messaging inmemory forma dotnet</PackageTags>
   </PropertyGroup>
   
   <ItemGroup>

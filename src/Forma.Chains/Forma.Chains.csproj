@@ -7,6 +7,8 @@
     <!-- Package metadata -->
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
+    <Description>Chain of Responsibility pattern implementation for .NET with DI support</Description>
+    <PackageTags>Chain Responsibility Pattern Microsoft Extensions DependencyInjection ChainOfResponsibility</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

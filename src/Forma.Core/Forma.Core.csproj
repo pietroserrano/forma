@@ -6,6 +6,8 @@
     <!-- Package metadata -->
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
+    <Description>Core abstractions and building blocks for Forma pattern-based architecture in .NET.</Description>
+    <PackageTags>mediator decorator pipeline dotnet patterns forma</PackageTags>
   </PropertyGroup>
 
   <!-- Include README and icon files in the package -->
