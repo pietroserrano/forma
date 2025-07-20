@@ -18,7 +18,10 @@
   "branchesConfig": {
     "develop": {
       "prerelease": "preview{height}",
-      "versionIncrement": "minor"
+      "versionIncrement": "minor",
+      "cloudBuild": {
+        "includeCommitId": false
+      }
     },
     "release/v.*": {
       "prerelease": "",
