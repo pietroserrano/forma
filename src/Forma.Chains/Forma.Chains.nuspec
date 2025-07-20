@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Forma.Chains</id>
-    <version>1.0.0</version>
+    <version>$version$</version>
     <authors>Forma Team</authors>    <owners>Forma Team</owners>
     <license type="expression">MIT</license>
     <projectUrl>https://github.com/pietroserrano/forma</projectUrl>

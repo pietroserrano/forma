@@ -13,6 +13,9 @@
     <RepositoryUrl>https://github.com/pietroserrano/forma</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     
+    <!-- Enable version token replacement in .nuspec files -->
+    <NuspecProperties>version=$(Version)</NuspecProperties>
+    
     <!-- Controlla se usare riferimenti ai progetti o pacchetti NuGet -->
     <!-- Per default, in sviluppo locale, usiamo i riferimenti ai progetti -->
     <UseProjectReferences Condition="'$(UseProjectReferences)' == ''">true</UseProjectReferences>
