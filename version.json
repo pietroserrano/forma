@@ -17,7 +17,7 @@
   },
   "branchesConfig": {
     "develop": {
-      "prerelease": "preview",
+      "prerelease": "preview{height}",
       "versionIncrement": "minor"
     },
     "release/v.*": {
