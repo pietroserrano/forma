@@ -1,5 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- TargetFramework e Nullable sono definiti in Directory.Build.props -->
+    
+    <!-- Package metadata -->
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
   </ItemGroup>
@@ -13,9 +22,10 @@
     <PackageReference Include="Forma.Core" Version="$(FormaVersion)" />
   </ItemGroup>
   
-  <PropertyGroup>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <!-- TargetFramework e Nullable sono definiti in Directory.Build.props -->
-  </PropertyGroup>
+  <!-- Include README and icon files in the package -->
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\assets\icon.png" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
 </Project>
