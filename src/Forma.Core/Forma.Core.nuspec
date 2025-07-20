@@ -2,6 +2,7 @@
 <package >
   <metadata>
     <id>Forma.Core</id>
+    <version>$version$</version>
     <authors>Pietro Serrano</authors>    <owners>pserrano</owners>
     <license type="expression">MIT</license>
     <projectUrl>https://github.com/pietroserrano/forma</projectUrl>

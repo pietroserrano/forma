@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Forma.Decorator</id>
-    <version>1.0.0</version>
+    <version>$version$</version>
     <authors>Pietro Serrano</authors>    <owners>pserrano</owners>
     <license type="expression">MIT</license>
     <projectUrl>https://github.com/pietroserrano/forma</projectUrl>
@@ -12,7 +12,7 @@
     <description>Forma module that provides a decorator infrastructure for .NET services.</description>
     <tags>decorator pipeline behavior forma dotnet</tags>
     <dependencies>
-      <dependency id="Forma.Core" version="1.0.0" />
+      <dependency id="Forma.Core" version="$version$" />
     </dependencies>
     <repository type="git" url="https://github.com/pietroserrano/forma" />  </metadata>
   <files>
