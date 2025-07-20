@@ -52,7 +52,7 @@ jobs:
   # Publish Forma.Mediator
   publish-mediator:
     needs: detect-changes
-    if: needs.detect-changes.outputs.mediator-changed == 'true' || github.event_name == 'workflow_dispatch' && inputs.force-publish
+    if: needs.detect-changes.outputs.mediator-changed == 'true' || (github.event_name == 'workflow_dispatch' && inputs.force-publish == true)
     uses: ./.github/workflows/nuget-publish-reusable.yml
     with:
       project-name: Forma.Mediator
