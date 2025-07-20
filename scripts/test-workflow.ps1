@@ -24,6 +24,7 @@ param(
     [string]$Version = "1.0.0-test",
     
     [Parameter(Mandatory=$false)]
+    [ValidateSet("chains", "pubsub", "mediator", "decorator")]
     [string]$Component = "chains",    
     [Parameter(Mandatory=$false)]
     [switch]$UseLocalNuget,
@@ -140,7 +141,7 @@ $eventName = "push"
 $eventJson = ""
 
 if ($WorkflowType -eq "core") {
-    $workflowFile = ".github/workflows/nuget-deploy.yml"
+    $workflowFile = ".github/workflows/release-core.yml"
     $tagName = "v${Version}-core"
     $eventJson = @"
 {
@@ -154,9 +155,9 @@ if ($WorkflowType -eq "core") {
 }
 "@
 }
-else {
-    $workflowFile = ".github/workflows/nuget-component-deploy.yml"
-    $tagName = "v${Version}-${Component}"
+elseif ($Component -eq "chains") {
+    $workflowFile = ".github/workflows/release-chains.yml"
+    $tagName = "v${Version}-chains"
     $eventJson = @"
 {
   "ref": "refs/tags/$tagName",
@@ -168,6 +169,55 @@ else {
   }
 }
 "@
+}
+elseif ($Component -eq "pubsub") {
+    $workflowFile = ".github/workflows/release-pubsub.yml"
+    $tagName = "v${Version}-pubsub"
+    $eventJson = @"
+{
+  "ref": "refs/tags/$tagName",
+  "repository": {
+    "name": "forma",
+    "owner": {
+      "name": "user"
+    }
+  }
+}
+"@
+}
+elseif ($Component -eq "mediator") {
+    $workflowFile = ".github/workflows/release-mediator.yml"
+    $tagName = "v${Version}-mediator"
+    $eventJson = @"
+{
+  "ref": "refs/tags/$tagName",
+  "repository": {
+    "name": "forma",
+    "owner": {
+      "name": "user"
+    }
+  }
+}
+"@
+}
+elseif ($Component -eq "decorator") {
+    $workflowFile = ".github/workflows/release-decorator.yml"
+    $tagName = "v${Version}-decorator"
+    $eventJson = @"
+{
+  "ref": "refs/tags/$tagName",
+  "repository": {
+    "name": "forma",
+    "owner": {
+      "name": "user"
+    }
+  }
+}
+"@
+}
+else {
+    Write-Error "Unknown component '$Component'. Valid components are: chains, pubsub, mediator, decorator"
+    exit 1
 }
 
 # Handle local NuGet server if requested

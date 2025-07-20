@@ -1,0 +1,81 @@
+name: Release PubSub Package
+
+on:
+  workflow_dispatch:   # Manual trigger
+    inputs:
+      force-publish:
+        description: 'Force publish even if no changes detected'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  # Check if PubSub package has changes
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      pubsub-changed: ${{ steps.final.outputs.pubsub }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Detect changes
+      uses: dorny/paths-filter@v3
+      id: changes
+      with:
+        filters: |
+          pubsub:
+            - 'src/Forma.PubSub.InMemory/**'
+            - 'src/Forma.Core/**'
+            - 'Directory.Build.props'
+            - 'version.json'
+      continue-on-error: true
+      
+    - name: Fallback change detection
+      if: steps.changes.outcome == 'failure'
+      id: fallback
+      run: |
+        echo "Change detection failed, defaulting to publish package"
+        echo "pubsub=true" >> $GITHUB_OUTPUT
+        
+    - name: Set final outputs
+      id: final
+      run: |
+        if [ "${{ steps.changes.outcome }}" = "success" ]; then
+          echo "pubsub=${{ steps.changes.outputs.pubsub }}" >> $GITHUB_OUTPUT
+        else
+          echo "pubsub=${{ steps.fallback.outputs.pubsub }}" >> $GITHUB_OUTPUT
+        fi
+
+  # Publish Forma.PubSub.InMemory
+  publish-pubsub:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.pubsub-changed == 'true' || github.event_name == 'workflow_dispatch' && inputs.force-publish
+    uses: ./.github/workflows/nuget-publish-reusable.yml
+    with:
+      project-name: Forma.PubSub.InMemory
+      project-path: src/Forma.PubSub.InMemory/Forma.PubSub.InMemory.csproj
+      run-tests: true
+      test-filter: 'FullyQualifiedName~Forma.Tests.PubSub'
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      NUGET_SOURCE: ${{ secrets.NUGET_SOURCE }}
+
+  # Summary job
+  summary:
+    needs: [detect-changes, publish-pubsub]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - name: Summary
+      run: |
+        echo "## PubSub Package Release Summary" >> $GITHUB_STEP_SUMMARY
+        echo "| Package | Status | Changed |" >> $GITHUB_STEP_SUMMARY
+        echo "|---------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Forma.PubSub.InMemory | ${{ needs.publish-pubsub.result || 'skipped' }} | ${{ needs.detect-changes.outputs.pubsub-changed }} |" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "**Triggered manually**" >> $GITHUB_STEP_SUMMARY
+        fi

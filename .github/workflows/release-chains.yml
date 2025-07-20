@@ -1,0 +1,81 @@
+name: Release Chains Package
+
+on:
+  workflow_dispatch:   # Manual trigger
+    inputs:
+      force-publish:
+        description: 'Force publish even if no changes detected'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  # Check if Chains package has changes
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      chains-changed: ${{ steps.final.outputs.chains }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Detect changes
+      uses: dorny/paths-filter@v3
+      id: changes
+      with:
+        filters: |
+          chains:
+            - 'src/Forma.Chains/**'
+            - 'src/Forma.Core/**'
+            - 'Directory.Build.props'
+            - 'version.json'
+      continue-on-error: true
+      
+    - name: Fallback change detection
+      if: steps.changes.outcome == 'failure'
+      id: fallback
+      run: |
+        echo "Change detection failed, defaulting to publish package"
+        echo "chains=true" >> $GITHUB_OUTPUT
+        
+    - name: Set final outputs
+      id: final
+      run: |
+        if [ "${{ steps.changes.outcome }}" = "success" ]; then
+          echo "chains=${{ steps.changes.outputs.chains }}" >> $GITHUB_OUTPUT
+        else
+          echo "chains=${{ steps.fallback.outputs.chains }}" >> $GITHUB_OUTPUT
+        fi
+
+  # Publish Forma.Chains
+  publish-chains:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.chains-changed == 'true' || github.event_name == 'workflow_dispatch' && inputs.force-publish
+    uses: ./.github/workflows/nuget-publish-reusable.yml
+    with:
+      project-name: Forma.Chains
+      project-path: src/Forma.Chains/Forma.Chains.csproj
+      run-tests: true
+      test-filter: 'FullyQualifiedName~Forma.Tests.Chains'
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      NUGET_SOURCE: ${{ secrets.NUGET_SOURCE }}
+
+  # Summary job
+  summary:
+    needs: [detect-changes, publish-chains]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - name: Summary
+      run: |
+        echo "## Chains Package Release Summary" >> $GITHUB_STEP_SUMMARY
+        echo "| Package | Status | Changed |" >> $GITHUB_STEP_SUMMARY
+        echo "|---------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Forma.Chains | ${{ needs.publish-chains.result || 'skipped' }} | ${{ needs.detect-changes.outputs.chains-changed }} |" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "**Triggered manually**" >> $GITHUB_STEP_SUMMARY
+        fi

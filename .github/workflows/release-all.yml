@@ -1,0 +1,158 @@
+name: Release All Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: 'Packages to release (comma-separated: core,mediator,decorator,chains,pubsub or "all")'
+        required: true
+        default: 'all'
+        type: string
+      force-publish:
+        description: 'Force publish even if no changes detected'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  # Parse input and determine which packages to release
+  parse-input:
+    runs-on: ubuntu-latest
+    outputs:
+      release-core: ${{ steps.parse.outputs.release-core }}
+      release-mediator: ${{ steps.parse.outputs.release-mediator }}
+      release-decorator: ${{ steps.parse.outputs.release-decorator }}
+      release-chains: ${{ steps.parse.outputs.release-chains }}
+      release-pubsub: ${{ steps.parse.outputs.release-pubsub }}
+    steps:
+    - name: Parse package selection
+      id: parse
+      run: |
+        PACKAGES="${{ github.event.inputs.packages }}"
+        
+        if [ "$PACKAGES" = "all" ]; then
+          echo "release-core=true" >> $GITHUB_OUTPUT
+          echo "release-mediator=true" >> $GITHUB_OUTPUT
+          echo "release-decorator=true" >> $GITHUB_OUTPUT
+          echo "release-chains=true" >> $GITHUB_OUTPUT
+          echo "release-pubsub=true" >> $GITHUB_OUTPUT
+        else
+          echo "release-core=false" >> $GITHUB_OUTPUT
+          echo "release-mediator=false" >> $GITHUB_OUTPUT
+          echo "release-decorator=false" >> $GITHUB_OUTPUT
+          echo "release-chains=false" >> $GITHUB_OUTPUT
+          echo "release-pubsub=false" >> $GITHUB_OUTPUT
+          
+          IFS=',' read -ra PACKAGE_ARRAY <<< "$PACKAGES"
+          for package in "${PACKAGE_ARRAY[@]}"; do
+            package=$(echo "$package" | xargs)  # trim whitespace
+            case "$package" in
+              core)
+                echo "release-core=true" >> $GITHUB_OUTPUT
+                ;;
+              mediator)
+                echo "release-mediator=true" >> $GITHUB_OUTPUT
+                ;;
+              decorator)
+                echo "release-decorator=true" >> $GITHUB_OUTPUT
+                ;;
+              chains)
+                echo "release-chains=true" >> $GITHUB_OUTPUT
+                ;;
+              pubsub)
+                echo "release-pubsub=true" >> $GITHUB_OUTPUT
+                ;;
+            esac
+          done
+        fi
+
+  # Publish Forma.Core
+  publish-core:
+    needs: parse-input
+    if: needs.parse-input.outputs.release-core == 'true'
+    uses: ./.github/workflows/nuget-publish-reusable.yml
+    with:
+      project-name: Forma.Core
+      project-path: src/Forma.Core/Forma.Core.csproj
+      run-tests: true
+      test-filter: 'FullyQualifiedName~Forma.Tests.Core'
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      NUGET_SOURCE: ${{ secrets.NUGET_SOURCE }}
+
+  # Publish Forma.Mediator
+  publish-mediator:
+    needs: [parse-input, publish-core]
+    if: always() && needs.parse-input.outputs.release-mediator == 'true'
+    uses: ./.github/workflows/nuget-publish-reusable.yml
+    with:
+      project-name: Forma.Mediator
+      project-path: src/Forma.Mediator/Forma.Mediator.csproj
+      run-tests: true
+      test-filter: 'FullyQualifiedName~Forma.Tests.Mediator'
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      NUGET_SOURCE: ${{ secrets.NUGET_SOURCE }}
+
+  # Publish Forma.Decorator
+  publish-decorator:
+    needs: [parse-input, publish-core]
+    if: always() && needs.parse-input.outputs.release-decorator == 'true'
+    uses: ./.github/workflows/nuget-publish-reusable.yml
+    with:
+      project-name: Forma.Decorator
+      project-path: src/Forma.Decorator/Forma.Decorator.csproj
+      run-tests: true
+      test-filter: 'FullyQualifiedName~Forma.Tests.Decorator'
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      NUGET_SOURCE: ${{ secrets.NUGET_SOURCE }}
+
+  # Publish Forma.Chains
+  publish-chains:
+    needs: [parse-input, publish-core]
+    if: always() && needs.parse-input.outputs.release-chains == 'true'
+    uses: ./.github/workflows/nuget-publish-reusable.yml
+    with:
+      project-name: Forma.Chains
+      project-path: src/Forma.Chains/Forma.Chains.csproj
+      run-tests: true
+      test-filter: 'FullyQualifiedName~Forma.Tests.Chains'
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      NUGET_SOURCE: ${{ secrets.NUGET_SOURCE }}
+
+  # Publish Forma.PubSub.InMemory
+  publish-pubsub:
+    needs: [parse-input, publish-core]
+    if: always() && needs.parse-input.outputs.release-pubsub == 'true'
+    uses: ./.github/workflows/nuget-publish-reusable.yml
+    with:
+      project-name: Forma.PubSub.InMemory
+      project-path: src/Forma.PubSub.InMemory/Forma.PubSub.InMemory.csproj
+      run-tests: true
+      test-filter: 'FullyQualifiedName~Forma.Tests.PubSub'
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      NUGET_SOURCE: ${{ secrets.NUGET_SOURCE }}
+
+  # Summary job
+  summary:
+    needs: [parse-input, publish-core, publish-mediator, publish-decorator, publish-chains, publish-pubsub]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - name: Summary
+      run: |
+        echo "## All Packages Release Summary" >> $GITHUB_STEP_SUMMARY
+        echo "| Package | Requested | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|---------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Forma.Core | ${{ needs.parse-input.outputs.release-core }} | ${{ needs.publish-core.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Forma.Mediator | ${{ needs.parse-input.outputs.release-mediator }} | ${{ needs.publish-mediator.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Forma.Decorator | ${{ needs.parse-input.outputs.release-decorator }} | ${{ needs.publish-decorator.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Forma.Chains | ${{ needs.parse-input.outputs.release-chains }} | ${{ needs.publish-chains.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Forma.PubSub.InMemory | ${{ needs.parse-input.outputs.release-pubsub }} | ${{ needs.publish-pubsub.result || 'skipped' }} |" >> $GITHUB_STEP_SUMMARY
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Input packages:** ${{ github.event.inputs.packages }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Force publish:** ${{ github.event.inputs.force-publish }}" >> $GITHUB_STEP_SUMMARY

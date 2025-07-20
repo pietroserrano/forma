@@ -1,0 +1,81 @@
+name: Reusable NuGet Publish Workflow
+
+on:
+  workflow_call:
+    inputs:
+      project-name:
+        required: true
+        type: string
+        description: 'Name of the project to publish (e.g., Forma.Core)'
+      project-path:
+        required: true
+        type: string
+        description: 'Path to the project file (e.g., src/Forma.Core/Forma.Core.csproj)'
+      run-tests:
+        required: false
+        type: boolean
+        default: true
+        description: 'Whether to run tests before publishing'
+      test-filter:
+        required: false
+        type: string
+        description: 'Test filter to apply (e.g., FullyQualifiedName~Forma.Tests.Core)'
+    secrets:
+      NUGET_API_KEY:
+        required: true
+      NUGET_SOURCE:
+        required: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Required for GitVersioning
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+        
+    - name: Restore dependencies
+      run: dotnet restore
+      
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+      
+    - name: Run tests
+      if: inputs.run-tests
+      run: |
+        if [ -n "${{ inputs.test-filter }}" ]; then
+          dotnet test --configuration Release --no-build --filter "${{ inputs.test-filter }}"
+        else
+          dotnet test --configuration Release --no-build
+        fi
+      
+    - name: Pack project
+      run: dotnet pack ${{ inputs.project-path }} -c Release -o packages -p:UseProjectReferences=false
+      
+    - name: Determine NuGet source
+      id: nuget-source
+      run: |
+        if [ -n "${{ secrets.NUGET_SOURCE }}" ]; then
+          echo "source=${{ secrets.NUGET_SOURCE }}" >> $GITHUB_OUTPUT
+        else
+          echo "source=https://api.nuget.org/v3/index.json" >> $GITHUB_OUTPUT
+        fi
+      
+    - name: Push to NuGet
+      run: dotnet nuget push "./packages/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source ${{ steps.nuget-source.outputs.source }} --skip-duplicate
+      if: success()
+      
+    - name: Upload packages as artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: nuget-packages-${{ inputs.project-name }}
+        path: packages/*.nupkg
+        retention-days: 7

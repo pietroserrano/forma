@@ -1,0 +1,80 @@
+name: Release Core Package
+
+on:
+  workflow_dispatch:   # Manual trigger
+    inputs:
+      force-publish:
+        description: 'Force publish even if no changes detected'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  # Check if Core package has changes
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      core-changed: ${{ steps.final.outputs.core }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Detect changes
+      uses: dorny/paths-filter@v3
+      id: changes
+      with:
+        filters: |
+          core:
+            - 'src/Forma.Core/**'
+            - 'Directory.Build.props'
+            - 'version.json'
+      continue-on-error: true
+      
+    - name: Fallback change detection
+      if: steps.changes.outcome == 'failure'
+      id: fallback
+      run: |
+        echo "Change detection failed, defaulting to publish package"
+        echo "core=true" >> $GITHUB_OUTPUT
+        
+    - name: Set final outputs
+      id: final
+      run: |
+        if [ "${{ steps.changes.outcome }}" = "success" ]; then
+          echo "core=${{ steps.changes.outputs.core }}" >> $GITHUB_OUTPUT
+        else
+          echo "core=${{ steps.fallback.outputs.core }}" >> $GITHUB_OUTPUT
+        fi
+
+  # Publish Forma.Core
+  publish-core:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.core-changed == 'true' || github.event_name == 'workflow_dispatch' && inputs.force-publish
+    uses: ./.github/workflows/nuget-publish-reusable.yml
+    with:
+      project-name: Forma.Core
+      project-path: src/Forma.Core/Forma.Core.csproj
+      run-tests: true
+      test-filter: 'FullyQualifiedName~Forma.Tests.Core'
+    secrets:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      NUGET_SOURCE: ${{ secrets.NUGET_SOURCE }}
+
+  # Summary job
+  summary:
+    needs: [detect-changes, publish-core]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+    - name: Summary
+      run: |
+        echo "## Core Package Release Summary" >> $GITHUB_STEP_SUMMARY
+        echo "| Package | Status | Changed |" >> $GITHUB_STEP_SUMMARY
+        echo "|---------|--------|---------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Forma.Core | ${{ needs.publish-core.result || 'skipped' }} | ${{ needs.detect-changes.outputs.core-changed }} |" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "**Triggered manually**" >> $GITHUB_STEP_SUMMARY
+        fi
