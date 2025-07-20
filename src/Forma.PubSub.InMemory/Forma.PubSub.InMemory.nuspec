@@ -19,8 +19,6 @@
     </dependencies>
     <repository type="git" url="https://github.com/pietroserrano/forma" />  </metadata>
   <files>
-    <!-- Temporaneamente utilizziamo l'SVG, ma questo dovrebbe essere convertito in PNG -->
-    <!-- Per il rilascio pubblico, converti l'SVG in PNG usando le istruzioni in assets\icon-notes.md -->
-    <file src="..\..\assets\forma-icon.svg" target="images\icon.png" />
+    <file src="..\..\assets\icon.png" target="images\icon.png" />
   </files>
 </package>
