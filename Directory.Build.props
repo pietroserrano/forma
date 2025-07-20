@@ -3,7 +3,7 @@
     <Company>pserrano</Company>
     <Authors>Pietro Serrano</Authors>
     <Copyright>Copyright © 2025</Copyright>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -32,10 +32,12 @@
     </PropertyGroup>
   </Target>
 
+  <!-- Temporarily disabled for build testing
   <ItemGroup>
     <PackageReference Include="Nerdbank.GitVersioning" Version="3.6.133">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
+  -->
 </Project>
