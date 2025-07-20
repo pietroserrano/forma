@@ -3,7 +3,7 @@
     <Company>pserrano</Company>
     <Authors>Pietro Serrano</Authors>
     <Copyright>Copyright © 2025</Copyright>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -12,6 +12,13 @@
     <!-- <Version>1.0.0</Version> -->
     <RepositoryUrl>https://github.com/pietroserrano/forma</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    
+    <!-- Common NuGet package properties -->
+    <PackageProjectUrl>https://github.com/pietroserrano/forma</PackageProjectUrl>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <RepositoryType>git</RepositoryType>
     
     <!-- Controlla se usare riferimenti ai progetti o pacchetti NuGet -->
     <!-- Per default, in sviluppo locale, usiamo i riferimenti ai progetti -->
@@ -25,19 +32,16 @@
     <!-- <FormaVersion Condition="'$(FormaVersion)' == ''">1.0.*</FormaVersion> -->
   </PropertyGroup>
 
-  <!-- Custom target to set the version before pack for .nuspec files -->
-  <Target Name="SetNuspecVersion" BeforeTargets="GenerateNuspec" DependsOnTargets="GetBuildVersion">
-    <PropertyGroup>
-      <NuspecProperties>version=$(NuGetPackageVersion)</NuspecProperties>
-    </PropertyGroup>
-  </Target>
+  <!-- Common package files -->
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)assets\icon.png" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
-  <!-- Temporarily disabled for build testing
   <ItemGroup>
     <PackageReference Include="Nerdbank.GitVersioning" Version="3.6.133">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
-  -->
 </Project>
