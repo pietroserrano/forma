@@ -1,6 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">  <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- TargetFramework e Nullable sono definiti in Directory.Build.props -->
+    
+    <!-- Use .nuspec file for packaging -->
+    <NuspecFile>Forma.PubSub.InMemory.nuspec</NuspecFile>
   </PropertyGroup>
   
   <ItemGroup>

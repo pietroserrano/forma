@@ -10,6 +10,23 @@
 
 [![Build and Test](https://github.com/pietroserrano/forma/actions/workflows/build-test.yml/badge.svg)](https://github.com/pietroserrano/forma/actions/workflows/build-test.yml)
 
+## NuGet Packages
+
+[![Forma.Core](https://img.shields.io/nuget/v/Forma.Core.svg?label=Forma.Core)](https://www.nuget.org/packages/Forma.Core/)
+[![Forma.Core PreRelease](https://img.shields.io/nuget/vpre/Forma.Core.svg?label=Forma.Core%20(preview))](https://www.nuget.org/packages/Forma.Core/)
+
+[![Forma.Mediator](https://img.shields.io/nuget/v/Forma.Mediator.svg?label=Forma.Mediator)](https://www.nuget.org/packages/Forma.Mediator/)
+[![Forma.Mediator PreRelease](https://img.shields.io/nuget/vpre/Forma.Mediator.svg?label=Forma.Mediator%20(preview))](https://www.nuget.org/packages/Forma.Mediator/)
+
+[![Forma.Decorator](https://img.shields.io/nuget/v/Forma.Decorator.svg?label=Forma.Decorator)](https://www.nuget.org/packages/Forma.Decorator/)
+[![Forma.Decorator PreRelease](https://img.shields.io/nuget/vpre/Forma.Decorator.svg?label=Forma.Decorator%20(preview))](https://www.nuget.org/packages/Forma.Decorator/)
+
+[![Forma.Chains](https://img.shields.io/nuget/v/Forma.Chains.svg?label=Forma.Chains)](https://www.nuget.org/packages/Forma.Chains/)
+[![Forma.Chains PreRelease](https://img.shields.io/nuget/vpre/Forma.Chains.svg?label=Forma.Chains%20(preview))](https://www.nuget.org/packages/Forma.Chains/)
+
+[![Forma.PubSub.InMemory](https://img.shields.io/nuget/v/Forma.PubSub.InMemory.svg?label=Forma.PubSub.InMemory)](https://www.nuget.org/packages/Forma.PubSub.InMemory/)
+[![Forma.PubSub.InMemory PreRelease](https://img.shields.io/nuget/vpre/Forma.PubSub.InMemory.svg?label=Forma.PubSub.InMemory%20(preview))](https://www.nuget.org/packages/Forma.PubSub.InMemory/)
+
 ---
 
 ## ✨ Features
