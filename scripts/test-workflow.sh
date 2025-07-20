@@ -22,7 +22,7 @@ show_usage() {
     echo "Parameters:"
     echo "  -t, --type             Workflow type (core or component)"
     echo "  -v, --version          Version to use for the test (default: 1.0.0-test)"
-    echo "  -c, --component        Component for component workflow (default: chains)"
+    echo "  -c, --component        Component for component workflow (chains, pubsub, mediator, decorator - default: chains)"
     echo "  --local-nuget          Use local NuGet server in Docker"
     echo "  --nuget-container      Name for the NuGet server container (default: local-nuget-server)"
     echo "  --nuget-port           Port for the NuGet server (default: 5555)"
@@ -30,6 +30,9 @@ show_usage() {
     echo "Examples:"
     echo "  $0 -t core"
     echo "  $0 -t component -c pubsub -v 1.2.3-test"
+    echo "  $0 -t component -c chains"
+    echo "  $0 -t component -c mediator"  
+    echo "  $0 -t component -c decorator"
     echo "  $0 -t core --local-nuget"
     echo "  $0 -t component -c chains --local-nuget --nuget-port 5000"
     exit 1
@@ -181,7 +184,7 @@ EVENT_FILE=$(mktemp)
 TEMP_WORKFLOW_FILE=""
 
 if [ "$WORKFLOW_TYPE" = "core" ]; then
-    WORKFLOW_FILE=".github/workflows/nuget-deploy.yml"
+    WORKFLOW_FILE=".github/workflows/release-core.yml"
     TAG_NAME="v${VERSION}-core"
     cat > "$EVENT_FILE" <<EOF
 {
@@ -194,9 +197,9 @@ if [ "$WORKFLOW_TYPE" = "core" ]; then
   }
 }
 EOF
-else
-    WORKFLOW_FILE=".github/workflows/nuget-component-deploy.yml"
-    TAG_NAME="v${VERSION}-${COMPONENT}"
+elif [ "$COMPONENT" = "chains" ]; then
+    WORKFLOW_FILE=".github/workflows/release-chains.yml"
+    TAG_NAME="v${VERSION}-chains"
     cat > "$EVENT_FILE" <<EOF
 {
   "ref": "refs/tags/$TAG_NAME",
@@ -208,6 +211,51 @@ else
   }
 }
 EOF
+elif [ "$COMPONENT" = "pubsub" ]; then
+    WORKFLOW_FILE=".github/workflows/release-pubsub.yml"
+    TAG_NAME="v${VERSION}-pubsub"
+    cat > "$EVENT_FILE" <<EOF
+{
+  "ref": "refs/tags/$TAG_NAME",
+  "repository": {
+    "name": "forma",
+    "owner": {
+      "name": "user"
+    }
+  }
+}
+EOF
+elif [ "$COMPONENT" = "mediator" ]; then
+    WORKFLOW_FILE=".github/workflows/release-mediator.yml"
+    TAG_NAME="v${VERSION}-mediator"
+    cat > "$EVENT_FILE" <<EOF
+{
+  "ref": "refs/tags/$TAG_NAME",
+  "repository": {
+    "name": "forma",
+    "owner": {
+      "name": "user"
+    }
+  }
+}
+EOF
+elif [ "$COMPONENT" = "decorator" ]; then
+    WORKFLOW_FILE=".github/workflows/release-decorator.yml"
+    TAG_NAME="v${VERSION}-decorator"
+    cat > "$EVENT_FILE" <<EOF
+{
+  "ref": "refs/tags/$TAG_NAME",
+  "repository": {
+    "name": "forma",
+    "owner": {
+      "name": "user"
+    }
+  }
+}
+EOF
+else
+    echo "Error: Unknown component '$COMPONENT'. Valid components are: chains, pubsub, mediator, decorator"
+    exit 1
 fi
 
 # Handle local NuGet server if requested
