@@ -20,7 +20,7 @@
     <!-- Versione dei pacchetti NuGet da usare quando UseProjectReferences=false -->
     <!-- Definisce la versione da usare per i riferimenti ai pacchetti NuGet -->
     <!-- Supporto per versioni standard e preview -->
-    <FormaVersion Condition="'$(FormaVersion)' == ''">1.0.0-preview.*</FormaVersion>
+    <FormaVersion Condition="'$(FormaVersion)' == ''">1.0.0-preview-*</FormaVersion>
     <!-- Per usare una versione stabile invece di preview: -->
     <!-- <FormaVersion Condition="'$(FormaVersion)' == ''">1.0.*</FormaVersion> -->
   </PropertyGroup>
