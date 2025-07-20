@@ -13,9 +13,6 @@
     <RepositoryUrl>https://github.com/pietroserrano/forma</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     
-    <!-- Enable version token replacement in .nuspec files -->
-    <NuspecProperties>version=$(Version)</NuspecProperties>
-    
     <!-- Controlla se usare riferimenti ai progetti o pacchetti NuGet -->
     <!-- Per default, in sviluppo locale, usiamo i riferimenti ai progetti -->
     <UseProjectReferences Condition="'$(UseProjectReferences)' == ''">true</UseProjectReferences>
@@ -27,6 +24,13 @@
     <!-- Per usare una versione stabile invece di preview: -->
     <!-- <FormaVersion Condition="'$(FormaVersion)' == ''">1.0.*</FormaVersion> -->
   </PropertyGroup>
+
+  <!-- Custom target to set the version before pack for .nuspec files -->
+  <Target Name="SetNuspecVersion" BeforeTargets="GenerateNuspec" DependsOnTargets="GetBuildVersion">
+    <PropertyGroup>
+      <NuspecProperties>version=$(NuGetPackageVersion)</NuspecProperties>
+    </PropertyGroup>
+  </Target>
 
   <ItemGroup>
     <PackageReference Include="Nerdbank.GitVersioning" Version="3.6.133">
