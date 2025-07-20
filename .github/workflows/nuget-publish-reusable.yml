@@ -57,7 +57,7 @@ jobs:
         fi
       
     - name: Pack project
-      run: dotnet pack ${{ inputs.project-path }} -c Release -o packages -p:UseProjectReferences=false
+      run: dotnet pack ${{ inputs.project-path }} -c Release -o packages
       
     - name: Determine NuGet source
       id: nuget-source
