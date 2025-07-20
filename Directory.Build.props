@@ -25,6 +25,13 @@
     <!-- <FormaVersion Condition="'$(FormaVersion)' == ''">1.0.*</FormaVersion> -->
   </PropertyGroup>
 
+  <!-- Custom target to set the version before pack for .nuspec files -->
+  <Target Name="SetNuspecVersion" BeforeTargets="GenerateNuspec" DependsOnTargets="GetBuildVersion">
+    <PropertyGroup>
+      <NuspecProperties>version=$(NuGetPackageVersion)</NuspecProperties>
+    </PropertyGroup>
+  </Target>
+
   <ItemGroup>
     <PackageReference Include="Nerdbank.GitVersioning" Version="3.6.133">
       <PrivateAssets>all</PrivateAssets>
