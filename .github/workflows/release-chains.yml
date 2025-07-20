@@ -1,13 +1,6 @@
 name: Release Chains Package
 
 on:
-  push:
-    branches:
-      - 'release_v*'  # Stable releases
-      - 'develop'     # Preview releases
-    tags:
-      - 'v*'          # Tag-based releases
-      - 'v*-chains'   # Legacy tag support
   workflow_dispatch:   # Manual trigger
     inputs:
       force-publish:

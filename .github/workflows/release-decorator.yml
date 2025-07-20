@@ -1,4 +1,4 @@
-name: Release PubSub Package
+name: Release Decorator Package
 
 on:
   workflow_dispatch:   # Manual trigger
@@ -10,11 +10,11 @@ on:
         type: boolean
 
 jobs:
-  # Check if PubSub package has changes
+  # Check if Decorator package has changes
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      pubsub-changed: ${{ steps.final.outputs.pubsub }}
+      decorator-changed: ${{ steps.final.outputs.decorator }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -26,8 +26,8 @@ jobs:
       id: changes
       with:
         filters: |
-          pubsub:
-            - 'src/Forma.PubSub.InMemory/**'
+          decorator:
+            - 'src/Forma.Decorator/**'
             - 'src/Forma.Core/**'
             - 'Directory.Build.props'
             - 'version.json'
@@ -38,43 +38,43 @@ jobs:
       id: fallback
       run: |
         echo "Change detection failed, defaulting to publish package"
-        echo "pubsub=true" >> $GITHUB_OUTPUT
+        echo "decorator=true" >> $GITHUB_OUTPUT
         
     - name: Set final outputs
       id: final
       run: |
         if [ "${{ steps.changes.outcome }}" = "success" ]; then
-          echo "pubsub=${{ steps.changes.outputs.pubsub }}" >> $GITHUB_OUTPUT
+          echo "decorator=${{ steps.changes.outputs.decorator }}" >> $GITHUB_OUTPUT
         else
-          echo "pubsub=${{ steps.fallback.outputs.pubsub }}" >> $GITHUB_OUTPUT
+          echo "decorator=${{ steps.fallback.outputs.decorator }}" >> $GITHUB_OUTPUT
         fi
 
-  # Publish Forma.PubSub.InMemory
-  publish-pubsub:
+  # Publish Forma.Decorator
+  publish-decorator:
     needs: detect-changes
-    if: needs.detect-changes.outputs.pubsub-changed == 'true' || github.event_name == 'workflow_dispatch' && inputs.force-publish
+    if: needs.detect-changes.outputs.decorator-changed == 'true' || github.event_name == 'workflow_dispatch' && inputs.force-publish
     uses: ./.github/workflows/nuget-publish-reusable.yml
     with:
-      project-name: Forma.PubSub.InMemory
-      project-path: src/Forma.PubSub.InMemory/Forma.PubSub.InMemory.csproj
+      project-name: Forma.Decorator
+      project-path: src/Forma.Decorator/Forma.Decorator.csproj
       run-tests: true
-      test-filter: 'FullyQualifiedName~Forma.Tests.PubSub'
+      test-filter: 'FullyQualifiedName~Forma.Tests.Decorator'
     secrets:
       NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
       NUGET_SOURCE: ${{ secrets.NUGET_SOURCE }}
 
   # Summary job
   summary:
-    needs: [detect-changes, publish-pubsub]
+    needs: [detect-changes, publish-decorator]
     if: always()
     runs-on: ubuntu-latest
     steps:
     - name: Summary
       run: |
-        echo "## PubSub Package Release Summary" >> $GITHUB_STEP_SUMMARY
+        echo "## Decorator Package Release Summary" >> $GITHUB_STEP_SUMMARY
         echo "| Package | Status | Changed |" >> $GITHUB_STEP_SUMMARY
         echo "|---------|--------|---------|" >> $GITHUB_STEP_SUMMARY
-        echo "| Forma.PubSub.InMemory | ${{ needs.publish-pubsub.result || 'skipped' }} | ${{ needs.detect-changes.outputs.pubsub-changed }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Forma.Decorator | ${{ needs.publish-decorator.result || 'skipped' }} | ${{ needs.detect-changes.outputs.decorator-changed }} |" >> $GITHUB_STEP_SUMMARY
         
         if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
           echo "**Triggered manually**" >> $GITHUB_STEP_SUMMARY

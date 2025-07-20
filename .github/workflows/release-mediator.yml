@@ -1,4 +1,4 @@
-name: Release PubSub Package
+name: Release Mediator Package
 
 on:
   workflow_dispatch:   # Manual trigger
@@ -10,11 +10,11 @@ on:
         type: boolean
 
 jobs:
-  # Check if PubSub package has changes
+  # Check if Mediator package has changes
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
-      pubsub-changed: ${{ steps.final.outputs.pubsub }}
+      mediator-changed: ${{ steps.final.outputs.mediator }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -26,8 +26,8 @@ jobs:
       id: changes
       with:
         filters: |
-          pubsub:
-            - 'src/Forma.PubSub.InMemory/**'
+          mediator:
+            - 'src/Forma.Mediator/**'
             - 'src/Forma.Core/**'
             - 'Directory.Build.props'
             - 'version.json'
@@ -38,43 +38,43 @@ jobs:
       id: fallback
       run: |
         echo "Change detection failed, defaulting to publish package"
-        echo "pubsub=true" >> $GITHUB_OUTPUT
+        echo "mediator=true" >> $GITHUB_OUTPUT
         
     - name: Set final outputs
       id: final
       run: |
         if [ "${{ steps.changes.outcome }}" = "success" ]; then
-          echo "pubsub=${{ steps.changes.outputs.pubsub }}" >> $GITHUB_OUTPUT
+          echo "mediator=${{ steps.changes.outputs.mediator }}" >> $GITHUB_OUTPUT
         else
-          echo "pubsub=${{ steps.fallback.outputs.pubsub }}" >> $GITHUB_OUTPUT
+          echo "mediator=${{ steps.fallback.outputs.mediator }}" >> $GITHUB_OUTPUT
         fi
 
-  # Publish Forma.PubSub.InMemory
-  publish-pubsub:
+  # Publish Forma.Mediator
+  publish-mediator:
     needs: detect-changes
-    if: needs.detect-changes.outputs.pubsub-changed == 'true' || github.event_name == 'workflow_dispatch' && inputs.force-publish
+    if: needs.detect-changes.outputs.mediator-changed == 'true' || github.event_name == 'workflow_dispatch' && inputs.force-publish
     uses: ./.github/workflows/nuget-publish-reusable.yml
     with:
-      project-name: Forma.PubSub.InMemory
-      project-path: src/Forma.PubSub.InMemory/Forma.PubSub.InMemory.csproj
+      project-name: Forma.Mediator
+      project-path: src/Forma.Mediator/Forma.Mediator.csproj
       run-tests: true
-      test-filter: 'FullyQualifiedName~Forma.Tests.PubSub'
+      test-filter: 'FullyQualifiedName~Forma.Tests.Mediator'
     secrets:
       NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
       NUGET_SOURCE: ${{ secrets.NUGET_SOURCE }}
 
   # Summary job
   summary:
-    needs: [detect-changes, publish-pubsub]
+    needs: [detect-changes, publish-mediator]
     if: always()
     runs-on: ubuntu-latest
     steps:
     - name: Summary
       run: |
-        echo "## PubSub Package Release Summary" >> $GITHUB_STEP_SUMMARY
+        echo "## Mediator Package Release Summary" >> $GITHUB_STEP_SUMMARY
         echo "| Package | Status | Changed |" >> $GITHUB_STEP_SUMMARY
         echo "|---------|--------|---------|" >> $GITHUB_STEP_SUMMARY
-        echo "| Forma.PubSub.InMemory | ${{ needs.publish-pubsub.result || 'skipped' }} | ${{ needs.detect-changes.outputs.pubsub-changed }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Forma.Mediator | ${{ needs.publish-mediator.result || 'skipped' }} | ${{ needs.detect-changes.outputs.mediator-changed }} |" >> $GITHUB_STEP_SUMMARY
         
         if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
           echo "**Triggered manually**" >> $GITHUB_STEP_SUMMARY

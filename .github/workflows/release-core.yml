@@ -1,13 +1,6 @@
-name: Release Core Packages
+name: Release Core Package
 
 on:
-  push:
-    branches:
-      - 'release_v*'  # Stable releases
-      - 'develop'     # Preview releases
-    tags:
-      - 'v*'          # Tag-based releases
-      - 'v*-core'     # Legacy tag support
   workflow_dispatch:   # Manual trigger
     inputs:
       force-publish:
@@ -17,14 +10,11 @@ on:
         type: boolean
 
 jobs:
-  # Check if any core packages have changes
+  # Check if Core package has changes
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
       core-changed: ${{ steps.final.outputs.core }}
-      mediator-changed: ${{ steps.final.outputs.mediator }}
-      decorator-changed: ${{ steps.final.outputs.decorator }}
-      any-changed: ${{ steps.final.outputs.core == 'true' || steps.final.outputs.mediator == 'true' || steps.final.outputs.decorator == 'true' }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -40,38 +30,22 @@ jobs:
             - 'src/Forma.Core/**'
             - 'Directory.Build.props'
             - 'version.json'
-          mediator:
-            - 'src/Forma.Mediator/**'
-            - 'src/Forma.Core/**'
-            - 'Directory.Build.props'
-            - 'version.json'
-          decorator:
-            - 'src/Forma.Decorator/**'
-            - 'src/Forma.Core/**'
-            - 'Directory.Build.props'
-            - 'version.json'
       continue-on-error: true
       
     - name: Fallback change detection
       if: steps.changes.outcome == 'failure'
       id: fallback
       run: |
-        echo "Change detection failed, defaulting to publish all packages"
+        echo "Change detection failed, defaulting to publish package"
         echo "core=true" >> $GITHUB_OUTPUT
-        echo "mediator=true" >> $GITHUB_OUTPUT
-        echo "decorator=true" >> $GITHUB_OUTPUT
         
     - name: Set final outputs
       id: final
       run: |
         if [ "${{ steps.changes.outcome }}" = "success" ]; then
           echo "core=${{ steps.changes.outputs.core }}" >> $GITHUB_OUTPUT
-          echo "mediator=${{ steps.changes.outputs.mediator }}" >> $GITHUB_OUTPUT
-          echo "decorator=${{ steps.changes.outputs.decorator }}" >> $GITHUB_OUTPUT
         else
           echo "core=${{ steps.fallback.outputs.core }}" >> $GITHUB_OUTPUT
-          echo "mediator=${{ steps.fallback.outputs.mediator }}" >> $GITHUB_OUTPUT
-          echo "decorator=${{ steps.fallback.outputs.decorator }}" >> $GITHUB_OUTPUT
         fi
 
   # Publish Forma.Core
@@ -88,48 +62,18 @@ jobs:
       NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
       NUGET_SOURCE: ${{ secrets.NUGET_SOURCE }}
 
-  # Publish Forma.Mediator
-  publish-mediator:
-    needs: [detect-changes, publish-core]
-    if: always() && (needs.detect-changes.outputs.mediator-changed == 'true' || github.event_name == 'workflow_dispatch' && inputs.force-publish)
-    uses: ./.github/workflows/nuget-publish-reusable.yml
-    with:
-      project-name: Forma.Mediator
-      project-path: src/Forma.Mediator/Forma.Mediator.csproj
-      run-tests: true
-      test-filter: 'FullyQualifiedName~Forma.Tests.Mediator'
-    secrets:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-      NUGET_SOURCE: ${{ secrets.NUGET_SOURCE }}
-
-  # Publish Forma.Decorator
-  publish-decorator:
-    needs: [detect-changes, publish-core]
-    if: always() && (needs.detect-changes.outputs.decorator-changed == 'true' || github.event_name == 'workflow_dispatch' && inputs.force-publish)
-    uses: ./.github/workflows/nuget-publish-reusable.yml
-    with:
-      project-name: Forma.Decorator
-      project-path: src/Forma.Decorator/Forma.Decorator.csproj
-      run-tests: true
-      test-filter: 'FullyQualifiedName~Forma.Tests.Decorator'
-    secrets:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-      NUGET_SOURCE: ${{ secrets.NUGET_SOURCE }}
-
   # Summary job
   summary:
-    needs: [detect-changes, publish-core, publish-mediator, publish-decorator]
+    needs: [detect-changes, publish-core]
     if: always()
     runs-on: ubuntu-latest
     steps:
     - name: Summary
       run: |
-        echo "## Core Packages Release Summary" >> $GITHUB_STEP_SUMMARY
+        echo "## Core Package Release Summary" >> $GITHUB_STEP_SUMMARY
         echo "| Package | Status | Changed |" >> $GITHUB_STEP_SUMMARY
         echo "|---------|--------|---------|" >> $GITHUB_STEP_SUMMARY
         echo "| Forma.Core | ${{ needs.publish-core.result || 'skipped' }} | ${{ needs.detect-changes.outputs.core-changed }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Forma.Mediator | ${{ needs.publish-mediator.result || 'skipped' }} | ${{ needs.detect-changes.outputs.mediator-changed }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| Forma.Decorator | ${{ needs.publish-decorator.result || 'skipped' }} | ${{ needs.detect-changes.outputs.decorator-changed }} |" >> $GITHUB_STEP_SUMMARY
         
         if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
           echo "**Triggered manually**" >> $GITHUB_STEP_SUMMARY
