@@ -2,6 +2,9 @@
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- TargetFramework e Nullable sono definiti in Directory.Build.props -->
+    
+    <!-- Use .nuspec file for packaging -->
+    <NuspecFile>Forma.Core.nuspec</NuspecFile>
   </PropertyGroup>
 
 </Project>
