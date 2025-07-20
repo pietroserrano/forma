@@ -52,7 +52,7 @@ jobs:
   # Publish Forma.Decorator
   publish-decorator:
     needs: detect-changes
-    if: needs.detect-changes.outputs.decorator-changed == 'true' || github.event_name == 'workflow_dispatch' && inputs.force-publish
+    if: needs.detect-changes.outputs.decorator-changed == 'true' || (github.event_name == 'workflow_dispatch' && inputs.force-publish == true)
     uses: ./.github/workflows/nuget-publish-reusable.yml
     with:
       project-name: Forma.Decorator
