@@ -1,0 +1,6 @@
+@Forma.Examples.Web.AspNetCore_HostAddress = http://localhost:5242
+
+GET {{Forma.Examples.Web.AspNetCore_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

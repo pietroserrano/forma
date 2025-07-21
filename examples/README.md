@@ -11,15 +11,8 @@ examples/
 │   ├── Forma.Examples.Console.Decorator/
 │   ├── Forma.Examples.Console.Chains/
 │   └── Forma.Examples.Console.DependencyInjection/
-├── aspnet-core/                      # ASP.NET Core application examples (planned)
-│   ├── Forma.Examples.WebApi.Mediator/
-│   ├── Forma.Examples.WebApi.Decorator/
-│   ├── Forma.Examples.WebApi.Chains/
-│   └── Forma.Examples.WebApi.Complete/
-├── Forma.Core/                       # Core abstractions (local copy)
-├── Forma.Mediator/                   # Mediator implementation (local copy)
-├── Forma.Decorator/                  # Decorator implementation (local copy)
-├── Forma.Chains/                     # Chains implementation (local copy)
+├── web/                              # ASP.NET Core application examples
+│   └── Forma.Examples.Web.AspNetCore/
 └── Forma.Examples.sln                # Solution file for all examples
 ```
 
@@ -97,6 +90,38 @@ services.AddChain<PaymentRequest>(
 ```csharp
 // Patterns working together
 ProcessOrderCommand → Mediator → Chain → Decorated Services
+```
+
+## 🌐 Web Application Examples
+
+### ASP.NET Core Web API: [Forma.Examples.Web.AspNetCore](./web/Forma.Examples.Web.AspNetCore/)
+- **Purpose**: Demonstrates Forma patterns in a real-world web application
+- **Features**: REST API, CRUD operations, Swagger documentation, Cross-cutting concerns
+- **Patterns Used**: Mediator for CQRS, Decorators for service enhancement
+- **Use Cases**: Web APIs, Microservices, RESTful services
+
+#### Key Features:
+- **🎯 CQRS with Mediator**: Clean separation of commands and queries through API controllers
+- **🎨 Service Decorators**: Automatic logging, validation, and caching without code changes
+- **📋 Complete CRUD API**: User management with full REST operations
+- **📖 Swagger Integration**: Interactive API documentation and testing
+- **🔧 DI Configuration**: Proper dependency injection setup for web applications
+
+#### API Endpoints:
+```bash
+GET    /api/users         # Get all users
+GET    /api/users/{id}    # Get user by ID
+POST   /api/users         # Create new user
+PUT    /api/users/{id}    # Update user
+DELETE /api/users/{id}    # Delete user
+GET    /health            # Health check
+```
+
+#### Running the Web Example:
+```bash
+cd examples/web/Forma.Examples.Web.AspNetCore
+dotnet run
+# Browse to https://localhost:7XXX/swagger
 ```
 
 ## 🎯 Pattern Usage Guide
