@@ -29,23 +29,17 @@ public class Program
         services.AddTransient<OrderCreationHandler>();
         
         // Configure chains using Forma
-        services.AddChain<PaymentRequest>(config =>
-        {
-            config.UseChain(nameof(PaymentRequest));
-            config.Order<ValidationHandler>()
-                  .Order<FraudDetectionHandler>()
-                  .Order<PaymentProcessingHandler>()
-                  .Order<NotificationHandler>();
-        });
+        services.AddChain<PaymentRequest>(
+            typeof(ValidationHandler), 
+            typeof(FraudDetectionHandler), 
+            typeof(PaymentProcessingHandler), 
+            typeof(NotificationHandler));
 
-        services.AddChain<OrderRequest, OrderResponse>(config =>
-        {
-            config.UseChain(nameof(OrderRequest));
-            config.Order<OrderValidationHandler>()
-                  .Order<InventoryCheckHandler>()
-                  .Order<PricingHandler>()
-                  .Order<OrderCreationHandler>();
-        });
+        services.AddChain<OrderRequest, OrderResponse>(
+            typeof(OrderValidationHandler), 
+            typeof(InventoryCheckHandler), 
+            typeof(PricingHandler), 
+            typeof(OrderCreationHandler));
 
         // Build service provider
         var serviceProvider = services.BuildServiceProvider();
@@ -64,7 +58,7 @@ public class Program
             Results = new List<string>()
         };
         
-        await paymentChain.InvokeAsync(paymentRequest);
+        await paymentChain.HandleAsync(paymentRequest);
         
         System.Console.WriteLine("Payment processing completed. Steps executed:");
         foreach (var step in paymentRequest.Results)
@@ -85,14 +79,14 @@ public class Program
             Results = new List<string>()
         };
         
-        var orderResponse = await orderChain.InvokeAsync(orderRequest);
+        var orderResponse = await orderChain.HandleAsync(orderRequest);
         
         System.Console.WriteLine("Order processing completed. Steps executed:");
         foreach (var step in orderRequest.Results)
         {
             System.Console.WriteLine($"  ✓ {step}");
         }
-        System.Console.WriteLine($"Order Result: ID={orderResponse.OrderId}, Total=${orderResponse.TotalAmount:F2}");
+        System.Console.WriteLine($"Order Result: ID={orderResponse?.OrderId}, Total=${orderResponse?.TotalAmount:F2}");
         System.Console.WriteLine();
 
         // Example 3: Failed payment processing (fraud detection)
@@ -107,7 +101,7 @@ public class Program
         
         try
         {
-            await paymentChain.InvokeAsync(fraudulentPayment);
+            await paymentChain.HandleAsync(fraudulentPayment);
         }
         catch (InvalidOperationException ex)
         {
