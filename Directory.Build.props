@@ -22,12 +22,12 @@
     
     <!-- Controlla se usare riferimenti ai progetti o pacchetti NuGet -->
     <!-- Per default, in sviluppo locale, usiamo i riferimenti ai progetti -->
-    <UseProjectReferences Condition="'$(UseProjectReferences)' == ''">true</UseProjectReferences>
+    <UseProjectReferences Condition="'$(UseProjectReferences)' == ''">false</UseProjectReferences>
     
     <!-- Versione dei pacchetti NuGet da usare quando UseProjectReferences=false -->
     <!-- Definisce la versione da usare per i riferimenti ai pacchetti NuGet -->
     <!-- Supporto per versioni standard e preview -->
-    <FormaVersion Condition="'$(FormaVersion)' == ''">1.0.0-preview-*</FormaVersion>
+    <FormaVersion Condition="'$(FormaVersion)' == ''">1.0.0-preview-0004</FormaVersion>
     <!-- Per usare una versione stabile invece di preview: -->
     <!-- <FormaVersion Condition="'$(FormaVersion)' == ''">1.0.*</FormaVersion> -->
   </PropertyGroup>
