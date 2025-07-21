@@ -137,7 +137,7 @@ function Stop-LocalNugetServer {
 
 # Determine which workflow to test and set parameters
 $workflowFile = ""
-$eventName = "push"
+$eventName = "workflow_dispatch"
 $eventJson = ""
 
 if ($WorkflowType -eq "core") {
@@ -145,7 +145,9 @@ if ($WorkflowType -eq "core") {
     $tagName = "v${Version}-core"
     $eventJson = @"
 {
-  "ref": "refs/tags/$tagName",
+  "inputs": {
+    "force-publish": true
+  },
   "repository": {
     "name": "forma",
     "owner": {
@@ -160,7 +162,9 @@ elseif ($Component -eq "chains") {
     $tagName = "v${Version}-chains"
     $eventJson = @"
 {
-  "ref": "refs/tags/$tagName",
+  "inputs": {
+    "force-publish": true
+  },
   "repository": {
     "name": "forma",
     "owner": {
@@ -175,7 +179,9 @@ elseif ($Component -eq "pubsub") {
     $tagName = "v${Version}-pubsub"
     $eventJson = @"
 {
-  "ref": "refs/tags/$tagName",
+  "inputs": {
+    "force-publish": true
+  },
   "repository": {
     "name": "forma",
     "owner": {
@@ -190,7 +196,9 @@ elseif ($Component -eq "mediator") {
     $tagName = "v${Version}-mediator"
     $eventJson = @"
 {
-  "ref": "refs/tags/$tagName",
+  "inputs": {
+    "force-publish": true
+  },
   "repository": {
     "name": "forma",
     "owner": {
@@ -205,7 +213,9 @@ elseif ($Component -eq "decorator") {
     $tagName = "v${Version}-decorator"
     $eventJson = @"
 {
-  "ref": "refs/tags/$tagName",
+  "inputs": {
+    "force-publish": true
+  },
   "repository": {
     "name": "forma",
     "owner": {
@@ -275,10 +285,10 @@ if ($UseLocalNuget) {
 $eventFile = Join-Path $env:TEMP "github-event-$([Guid]::NewGuid().ToString()).json"
 $eventJson | Set-Content -Path $eventFile
 
-Write-Host "Testing workflow type '$WorkflowType' with tag '$tagName'..." -ForegroundColor Yellow    # Run act and simulate a tag push event
+Write-Host "Testing workflow type '$WorkflowType' with tag '$tagName'..." -ForegroundColor Yellow    # Run act and simulate a workflow_dispatch event
 try {
     # Add both required secrets for NuGet
-    $actCommand = "act push --eventpath $eventFile -W $workflowFile --secret NUGET_API_KEY=$nugetApiKey --secret NUGET_SOURCE=$nugetSourceUrl --container-architecture linux/amd64"
+    $actCommand = "act workflow_dispatch --eventpath $eventFile -W $workflowFile --secret NUGET_API_KEY=$nugetApiKey --secret NUGET_SOURCE=$nugetSourceUrl --container-architecture linux/amd64"
     
     Write-Host "Act command: $actCommand" -ForegroundColor Cyan
     

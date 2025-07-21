@@ -29,6 +29,10 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for creating tags and releases
+      packages: write  # Required for publishing packages
+    
     
     steps:
     - name: Checkout code
@@ -79,3 +83,106 @@ jobs:
         name: nuget-packages-${{ inputs.project-name }}
         path: packages/*.nupkg
         retention-days: 7
+        
+    - name: Get version from Nerdbank.GitVersioning
+      id: version
+      if: success()
+      run: |
+        # Install nbgv tool if not available
+        if ! command -v nbgv &> /dev/null; then
+          dotnet tool install --global nbgv
+        fi
+        
+        # Get version information
+        VERSION=$(nbgv get-version -v Version)
+        ASSEMBLY_VERSION=$(nbgv get-version -v AssemblyVersion)
+        PRERELEASE_VERSION=$(nbgv get-version -v PrereleaseVersion)
+        
+        echo "version=v$VERSION" >> $GITHUB_OUTPUT
+        echo "assembly-version=$ASSEMBLY_VERSION" >> $GITHUB_OUTPUT
+        echo "prerelease-version=$PRERELEASE_VERSION" >> $GITHUB_OUTPUT
+        
+        echo "Detected version: v$VERSION"
+        echo "Assembly version: $ASSEMBLY_VERSION"
+        echo "Prerelease version: $PRERELEASE_VERSION"
+        
+        # Determine if this is a stable release (no prerelease suffix)
+        if [ -z "$PRERELEASE_VERSION" ] || [ "$PRERELEASE_VERSION" = "" ]; then
+          echo "is-stable-release=true" >> $GITHUB_OUTPUT
+          echo "This is a stable release - tags and releases will be created"
+        else
+          echo "is-stable-release=false" >> $GITHUB_OUTPUT
+          echo "This is a prerelease version - tags and pre-releases will be created"
+        fi
+        
+    - name: Create Git tag
+      if: success() && steps.version.outputs.version != ''
+      run: |
+        TAG_NAME="${{ steps.version.outputs.version }}"
+        
+        # Configure git
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        
+        # Check if tag already exists
+        if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+          echo "Tag $TAG_NAME already exists, skipping tag creation"
+        else
+          echo "Creating tag $TAG_NAME"
+          git tag -a "$TAG_NAME" -m "Release ${{ inputs.project-name }} $TAG_NAME"
+          git push origin "$TAG_NAME"
+          echo "Tag $TAG_NAME created and pushed"
+        fi
+        
+    - name: Create GitHub Release
+      if: success() && steps.version.outputs.version != ''
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        TAG_NAME="${{ steps.version.outputs.version }}"
+        RELEASE_NAME="${{ inputs.project-name }} $TAG_NAME"
+        
+        # Check if release already exists
+        if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+          echo "Release $TAG_NAME already exists, skipping release creation"
+        else
+          echo "Creating GitHub release $TAG_NAME"
+          
+          # Create release notes
+          echo "## ${{ inputs.project-name }} $TAG_NAME" > release_notes.md
+          echo "" >> release_notes.md
+          if [ "${{ steps.version.outputs.is-stable-release }}" = "true" ]; then
+            echo "This release contains the following package:" >> release_notes.md
+          else
+            echo "This pre-release contains the following package:" >> release_notes.md
+          fi
+          echo "- **${{ inputs.project-name }}** version ${{ steps.version.outputs.version }}" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### Changes" >> release_notes.md
+          echo "- Package published to NuGet" >> release_notes.md
+          echo "- Automated release created by GitHub Actions" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### Package Information" >> release_notes.md
+          echo "- **Project**: ${{ inputs.project-name }}" >> release_notes.md
+          echo "- **Version**: ${{ steps.version.outputs.version }}" >> release_notes.md
+          echo "- **Assembly Version**: ${{ steps.version.outputs.assembly-version }}" >> release_notes.md
+          echo "- **Published**: \$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "View this package on [NuGet.org](https://www.nuget.org/packages/${{ inputs.project-name }})." >> release_notes.md
+
+          # Create the release (with --prerelease flag for preview versions)
+          if [ "${{ steps.version.outputs.is-stable-release }}" = "true" ]; then
+            gh release create "$TAG_NAME" \
+              --title "$RELEASE_NAME" \
+              --notes-file release_notes.md \
+              --latest=false
+          else
+            gh release create "$TAG_NAME" \
+              --title "$RELEASE_NAME" \
+              --notes-file release_notes.md \
+              --prerelease \
+              --latest=false
+          fi
+            
+          echo "GitHub release $TAG_NAME created successfully"
+        fi

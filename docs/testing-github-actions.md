@@ -45,7 +45,7 @@ The scripts perform the following operations:
 
 1. Verify that Docker is running
 2. Verify that `act` is installed
-3. Create a temporary event file that simulates a tag push
+3. Create a temporary event file that simulates a workflow dispatch
 4. Run the workflow with `--dry-run` to show what would happen
 5. Ask for confirmation before actually running the workflow
 6. Run the workflow in a Docker container
@@ -55,6 +55,20 @@ The scripts perform the following operations:
 - `act` uses Docker images to simulate GitHub Actions environments
 - Some aspects of the official GitHub runners may differ from the local environment
 - Actions that require access to GitHub APIs may require authentication tokens
+- Git operations (tag creation) and GitHub CLI operations (release creation) may not work in the containerized environment
+- The new automated release features (Git tags and GitHub releases) are best tested in actual CI/CD environments
+
+## What Gets Tested
+
+The scripts test the core workflow functionality including:
+- NuGet package building and publishing
+- Version detection using Nerdbank.GitVersioning
+- Workflow job dependencies and conditions
+
+The following features require actual GitHub environment:
+- Git tag creation and pushing
+- GitHub release creation
+- Repository permissions and authentication
 
 ## Troubleshooting
 
