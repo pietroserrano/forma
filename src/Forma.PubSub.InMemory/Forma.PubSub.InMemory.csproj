@@ -1,9 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">  <PropertyGroup>
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- TargetFramework e Nullable sono definiti in Directory.Build.props -->
     
-    <!-- Use .nuspec file for packaging -->
-    <NuspecFile>Forma.PubSub.InMemory.nuspec</NuspecFile>
+    <!-- Project-specific NuGet package properties -->
+    <PackageId>Forma.PubSub.InMemory</PackageId>
+    <Description>In-memory Publish-Subscribe implementation for Forma.</Description>
+    <PackageTags>pubsub messaging inmemory forma dotnet</PackageTags>
   </PropertyGroup>
   
   <ItemGroup>
