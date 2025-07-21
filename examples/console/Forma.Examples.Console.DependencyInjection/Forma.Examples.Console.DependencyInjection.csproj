@@ -8,10 +8,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../Forma.Core/Forma.Core.csproj" />
-    <ProjectReference Include="../../Forma.Mediator/Forma.Mediator.csproj" />
-    <ProjectReference Include="../../Forma.Decorator/Forma.Decorator.csproj" />
-    <ProjectReference Include="../../Forma.Chains/Forma.Chains.csproj" />
+    <ProjectReference Include="../../../src/Forma.Core/Forma.Core.csproj" />
+    <ProjectReference Include="../../../src/Forma.Mediator/Forma.Mediator.csproj" />
+    <ProjectReference Include="../../../src/Forma.Decorator/Forma.Decorator.csproj" />
+    <ProjectReference Include="../../../src/Forma.Chains/Forma.Chains.csproj" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.0" />
