@@ -45,7 +45,7 @@ jobs:
       run: dotnet restore
       
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build --configuration Release --no-restore -p:UseProjectReferences=false
       
     - name: Run tests
       if: inputs.run-tests

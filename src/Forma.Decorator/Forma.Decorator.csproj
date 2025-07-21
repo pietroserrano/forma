@@ -1,5 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- TargetFramework e Nullable sono definiti in Directory.Build.props -->
+    
+    <!-- Project-specific NuGet package properties -->
+    <PackageId>Forma.Decorator</PackageId>
+    <Description>Forma module that provides a decorator infrastructure for .NET services.</Description>
+    <PackageTags>decorator pipeline behavior forma dotnet</PackageTags>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Forma.Core\Forma.Core.csproj" />
   </ItemGroup>
@@ -7,12 +17,5 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.5" />
   </ItemGroup>
-  <PropertyGroup>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <!-- TargetFramework e Nullable sono definiti in Directory.Build.props -->
-    
-    <!-- Use .nuspec file for packaging -->
-    <NuspecFile>Forma.Decorator.nuspec</NuspecFile>
-  </PropertyGroup>
 
 </Project>
