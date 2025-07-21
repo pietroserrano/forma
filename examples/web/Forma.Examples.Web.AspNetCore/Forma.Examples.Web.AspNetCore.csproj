@@ -6,6 +6,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Disable GitVersioning for examples as they don't need it -->
+    <EnableGitVersioning>false</EnableGitVersioning>
   </PropertyGroup>
 
   <ItemGroup>

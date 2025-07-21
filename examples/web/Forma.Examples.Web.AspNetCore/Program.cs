@@ -18,30 +18,41 @@ builder.Services.AddRequestMediator(config =>
     config.RegisterServicesFromAssemblies(typeof(Program).Assembly);
 });
 
-// Add Forma Decorator (if available)
-// Note: Check if Forma.Decorator provides DI extensions
-// For now, we'll manually configure decorators
+// Register core services first
+builder.Services.AddScoped<IUserService, UserService>();
 
-// Add Forma Chains (for future pipeline examples)
-// builder.Services.AddChains();
+// Apply decorators using Forma.Decorator library
+// Order: Inner (UserService) -> Caching -> Validation -> Logging (Outer)
+builder.Services.Decorate<IUserService, CachingUserServiceDecorator>();
+builder.Services.Decorate<IUserService, ValidationUserServiceDecorator>();
+builder.Services.Decorate<IUserService, LoggingUserServiceDecorator>();
 
-// Register core services
-builder.Services.AddScoped<UserService>();
+// Add Forma Chains
+// Register chain handlers for order processing
+builder.Services.AddTransient<Forma.Examples.Web.AspNetCore.Chains.OrderValidationHandler>();
+builder.Services.AddTransient<Forma.Examples.Web.AspNetCore.Chains.InventoryCheckHandler>();
+builder.Services.AddTransient<Forma.Examples.Web.AspNetCore.Chains.OrderPricingHandler>();
+builder.Services.AddTransient<Forma.Examples.Web.AspNetCore.Chains.OrderCreationHandler>();
 
-// Apply decorators manually in order: Logging -> Validation -> Caching -> UserService
-builder.Services.AddScoped<IUserService>(provider =>
-{
-    var userService = provider.GetRequiredService<UserService>();
-    var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
-    
-    // Apply decorators in reverse order (inner to outer)
-    IUserService decorated = userService;
-    decorated = new CachingUserServiceDecorator(decorated, loggerFactory.CreateLogger<CachingUserServiceDecorator>());
-    decorated = new ValidationUserServiceDecorator(decorated, loggerFactory.CreateLogger<ValidationUserServiceDecorator>());
-    decorated = new LoggingUserServiceDecorator(decorated, loggerFactory.CreateLogger<LoggingUserServiceDecorator>());
-    
-    return decorated;
-});
+// Register chain handlers for payment processing
+builder.Services.AddTransient<Forma.Examples.Web.AspNetCore.Chains.PaymentValidationHandler>();
+builder.Services.AddTransient<Forma.Examples.Web.AspNetCore.Chains.PaymentFraudDetectionHandler>();
+builder.Services.AddTransient<Forma.Examples.Web.AspNetCore.Chains.PaymentProcessingHandler>();
+builder.Services.AddTransient<Forma.Examples.Web.AspNetCore.Chains.PaymentNotificationHandler>();
+
+// Configure order processing chain
+builder.Services.AddChain<Forma.Examples.Web.AspNetCore.Models.OrderProcessingRequest, Forma.Examples.Web.AspNetCore.Models.OrderProcessingResponse>(
+    typeof(Forma.Examples.Web.AspNetCore.Chains.OrderValidationHandler),
+    typeof(Forma.Examples.Web.AspNetCore.Chains.InventoryCheckHandler),
+    typeof(Forma.Examples.Web.AspNetCore.Chains.OrderPricingHandler),
+    typeof(Forma.Examples.Web.AspNetCore.Chains.OrderCreationHandler));
+
+// Configure payment processing chain
+builder.Services.AddChain<Forma.Examples.Web.AspNetCore.Models.PaymentProcessingRequest>(
+    typeof(Forma.Examples.Web.AspNetCore.Chains.PaymentValidationHandler),
+    typeof(Forma.Examples.Web.AspNetCore.Chains.PaymentFraudDetectionHandler),
+    typeof(Forma.Examples.Web.AspNetCore.Chains.PaymentProcessingHandler),
+    typeof(Forma.Examples.Web.AspNetCore.Chains.PaymentNotificationHandler));
 
 var app = builder.Build();
 
