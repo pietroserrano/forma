@@ -11,65 +11,92 @@ This example demonstrates how to use Forma's design patterns in an ASP.NET Core 
 - **Error Handling**: Centralized error handling and logging
 
 ### 🎨 **Decorator Pattern for Cross-Cutting Concerns**
+- **Forma.Decorator Integration**: Uses official `services.Decorate<T, TDecorator>()` extensions
 - **Logging Decorator**: Automatic logging of method calls, execution times, and results
 - **Validation Decorator**: Input validation with detailed error messages
 - **Caching Decorator**: In-memory caching with expiration for performance optimization
 - **Service Enhancement**: Adding functionality without modifying core business logic
 
-### 🔗 **Chain of Responsibility (Future)**
-- Ready for pipeline processing workflows
-- Request processing chains
-- Conditional handler execution
+### 🔗 **Chains Pattern for Complex Workflows**
+- **Order Processing Pipeline**: Validation → Inventory Check → Pricing → Order Creation
+- **Payment Processing Pipeline**: Validation → Fraud Detection → Payment → Notification
+- **Sequential Processing**: Each handler performs a specific step in the workflow
+- **Error Handling**: Early termination when any step fails
+- **Request Tracking**: Processing steps are recorded for debugging and monitoring
 
 ## Project Structure
 
 ```
 Forma.Examples.Web.AspNetCore/
 ├── Controllers/
-│   └── UsersController.cs      # REST API controller using mediator
+│   ├── UsersController.cs       # REST API controller using mediator
+│   └── OrdersController.cs      # Order processing using chains
 ├── Handlers/
-│   └── UserHandlers.cs         # Command and query handlers
+│   └── UserHandlers.cs          # Command and query handlers
 ├── Models/
-│   └── UserModels.cs           # DTOs and request/response models
+│   └── UserModels.cs            # DTOs and request/response models
 ├── Services/
-│   ├── UserService.cs          # Core business service
+│   ├── UserService.cs           # Core business service
 │   └── Decorators/
 │       └── UserServiceDecorators.cs  # Service decorators
-├── Program.cs                  # DI configuration and app setup
-└── README.md                   # This file
+├── Chains/
+│   ├── OrderChainHandlers.cs    # Order processing chain handlers
+│   └── PaymentChainHandlers.cs  # Payment processing chain handlers
+├── Program.cs                   # DI configuration and app setup
+└── README.md                    # This file
 ```
 
 ## API Endpoints
 
-The example provides a complete CRUD API for user management:
+The example provides multiple APIs demonstrating different patterns:
 
-### **GET /api/users**
+### **User Management API (Mediator + Decorators)**
+
+#### **GET /api/users**
 - Retrieves all users
 - Uses mediator to handle `GetAllUsersQuery`
 - Demonstrates decorator chain: Logging → Validation → Caching → UserService
 
-### **GET /api/users/{id}**
+#### **GET /api/users/{id}**
 - Retrieves a specific user by ID
 - Input validation through decorators
 - Caching for performance optimization
 - Error handling for not found scenarios
 
-### **POST /api/users**
+#### **POST /api/users**
 - Creates a new user
 - Request body validation
 - Returns created user with location header
 - Full decorator chain execution
 
-### **PUT /api/users/{id}**
+#### **PUT /api/users/{id}**
 - Updates an existing user
 - Validates both ID and request body
 - Cache invalidation and update
 - Returns updated user data
 
-### **DELETE /api/users/{id}**
+#### **DELETE /api/users/{id}**
 - Deletes a user by ID
 - Validation and cache cleanup
 - Returns 204 No Content on success
+
+### **Order Management API (Chains Pattern)**
+
+#### **POST /api/orders**
+- Creates a new order using order processing chain
+- **Chain Flow**: Validation → Inventory Check → Pricing → Order Creation
+- Request body: `{ "productId": "PROD-001", "quantity": 2, "customerId": "CUST-123", "customerEmail": "customer@example.com" }`
+- Returns complete order details with processing steps
+
+#### **POST /api/orders/{orderId}/payment**
+- Processes payment for an order using payment chain
+- **Chain Flow**: Validation → Fraud Detection → Payment Processing → Notification
+- Request body: `{ "amount": 99.99, "cardNumber": "4532-1234-5678-9012", "customerEmail": "customer@example.com" }`
+- Returns payment confirmation
+
+#### **GET /api/orders/samples**
+- Returns sample data for testing the chains
+- Provides example requests for both order creation and payment processing
 
 ## Pattern Implementation Details
 
@@ -97,20 +124,30 @@ public class CreateUserCommandHandler : IHandler<CreateUserCommand, UserCreatedR
 
 ### **Decorator Pattern**
 ```csharp
-// DI Configuration with multiple decorators
-builder.Services.AddScoped<IUserService>(provider =>
-{
-    var userService = provider.GetRequiredService<UserService>();
-    var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
-    
-    // Apply decorators in chain: Logging -> Validation -> Caching -> UserService
-    IUserService decorated = userService;
-    decorated = new CachingUserServiceDecorator(decorated, logger);
-    decorated = new ValidationUserServiceDecorator(decorated, logger);
-    decorated = new LoggingUserServiceDecorator(decorated, logger);
-    
-    return decorated;
-});
+// DI Configuration using Forma.Decorator extensions
+builder.Services.AddScoped<IUserService, UserService>();
+
+// Apply decorators using Forma.Decorator library
+// Order: Inner (UserService) -> Caching -> Validation -> Logging (Outer)
+builder.Services.Decorate<IUserService, CachingUserServiceDecorator>();
+builder.Services.Decorate<IUserService, ValidationUserServiceDecorator>();
+builder.Services.Decorate<IUserService, LoggingUserServiceDecorator>();
+```
+
+### **Chains Pattern**
+```csharp
+// Register chain handlers for order processing
+builder.Services.AddTransient<OrderValidationHandler>();
+builder.Services.AddTransient<InventoryCheckHandler>();
+builder.Services.AddTransient<OrderPricingHandler>();
+builder.Services.AddTransient<OrderCreationHandler>();
+
+// Configure order processing chain
+builder.Services.AddChain<OrderProcessingRequest, OrderProcessingResponse>(
+    typeof(OrderValidationHandler),
+    typeof(InventoryCheckHandler),
+    typeof(OrderPricingHandler),
+    typeof(OrderCreationHandler));
 ```
 
 ## Running the Example
@@ -141,33 +178,56 @@ The API will be available at:
 
 ### **Testing the API**
 
-#### Create a user:
+#### User Management (Mediator + Decorators):
+
+##### Create a user:
 ```bash
 curl -X POST "https://localhost:7XXX/api/users" \
      -H "Content-Type: application/json" \
      -d '{"name": "John Doe", "email": "john@example.com"}'
 ```
 
-#### Get all users:
+##### Get all users:
 ```bash
 curl -X GET "https://localhost:7XXX/api/users"
 ```
 
-#### Get specific user:
+##### Get specific user:
 ```bash
 curl -X GET "https://localhost:7XXX/api/users/1"
 ```
 
-#### Update user:
+##### Update user:
 ```bash
 curl -X PUT "https://localhost:7XXX/api/users/1" \
      -H "Content-Type: application/json" \
      -d '{"name": "Jane Doe", "email": "jane@example.com"}'
 ```
 
-#### Delete user:
+##### Delete user:
 ```bash
 curl -X DELETE "https://localhost:7XXX/api/users/1"
+```
+
+#### Order Processing (Chains Pattern):
+
+##### Create an order:
+```bash
+curl -X POST "https://localhost:7XXX/api/orders" \
+     -H "Content-Type: application/json" \
+     -d '{"productId": "PROD-001", "quantity": 2, "customerId": "CUST-123", "customerEmail": "customer@example.com"}'
+```
+
+##### Process payment for order:
+```bash
+curl -X POST "https://localhost:7XXX/api/orders/ORD-20250721-1234/payment" \
+     -H "Content-Type: application/json" \
+     -d '{"amount": 99.99, "cardNumber": "4532-1234-5678-9012", "customerEmail": "customer@example.com"}'
+```
+
+##### Get sample data:
+```bash
+curl -X GET "https://localhost:7XXX/api/orders/samples"
 ```
 
 ## Key Benefits Demonstrated
@@ -194,8 +254,9 @@ curl -X DELETE "https://localhost:7XXX/api/users/1"
 
 ## Expected Output
 
-When running the application, you'll see logs demonstrating the decorator chain:
+When running the application, you'll see logs demonstrating the different patterns:
 
+### **Decorator Pattern Logs:**
 ```
 info: LoggingUserServiceDecorator[0]
       Creating user: John Doe (john@example.com)
@@ -207,13 +268,28 @@ info: LoggingUserServiceDecorator[0]
       User created successfully in 45.2ms
 ```
 
+### **Chains Pattern Logs:**
+```
+info: OrderValidationHandler[0]
+      Validating order request GUID-123
+info: InventoryCheckHandler[0]
+      Checking inventory for product PROD-001
+info: OrderPricingHandler[0]
+      Calculating pricing for order GUID-123: $51.98
+info: OrderCreationHandler[0]
+      Order ORD-20250721-1234 created for customer CUST-123
+```
+
 ## Integration with Other Patterns
 
-This example can be extended to include:
-- **Chains Pattern**: For complex request processing pipelines
-- **Additional Decorators**: Retry logic, circuit breakers, audit trails
-- **Advanced Mediator Features**: Pipeline behaviors, notification handling
-- **Real Persistence**: Database integration with Entity Framework
+This example demonstrates how Forma patterns work together:
+- **Mediator + Decorators**: User management combines CQRS with cross-cutting concerns
+- **Chains for Complex Workflows**: Order and payment processing use sequential pipelines
+- **Future Extensions**: Additional patterns can be easily integrated
+  - **Additional Decorators**: Retry logic, circuit breakers, audit trails
+  - **Advanced Mediator Features**: Pipeline behaviors, notification handling
+  - **Complex Chains**: Multi-step approval workflows, business process automation
+  - **Real Persistence**: Database integration with Entity Framework
 
 ## Performance Notes
 
