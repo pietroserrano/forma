@@ -96,15 +96,27 @@ jobs:
         # Get version information
         VERSION=$(nbgv get-version -v Version)
         ASSEMBLY_VERSION=$(nbgv get-version -v AssemblyVersion)
+        PRERELEASE_VERSION=$(nbgv get-version -v PrereleaseVersion)
         
         echo "version=v$VERSION" >> $GITHUB_OUTPUT
         echo "assembly-version=$ASSEMBLY_VERSION" >> $GITHUB_OUTPUT
+        echo "prerelease-version=$PRERELEASE_VERSION" >> $GITHUB_OUTPUT
         
         echo "Detected version: v$VERSION"
         echo "Assembly version: $ASSEMBLY_VERSION"
+        echo "Prerelease version: $PRERELEASE_VERSION"
+        
+        # Determine if this is a stable release (no prerelease suffix)
+        if [ -z "$PRERELEASE_VERSION" ] || [ "$PRERELEASE_VERSION" = "" ]; then
+          echo "is-stable-release=true" >> $GITHUB_OUTPUT
+          echo "This is a stable release - tags and releases will be created"
+        else
+          echo "is-stable-release=false" >> $GITHUB_OUTPUT
+          echo "This is a prerelease version - skipping tag and release creation"
+        fi
         
     - name: Create Git tag
-      if: success() && steps.version.outputs.version != ''
+      if: success() && steps.version.outputs.version != '' && steps.version.outputs.is-stable-release == 'true'
       run: |
         TAG_NAME="${{ steps.version.outputs.version }}"
         
@@ -123,7 +135,7 @@ jobs:
         fi
         
     - name: Create GitHub Release
-      if: success() && steps.version.outputs.version != ''
+      if: success() && steps.version.outputs.version != '' && steps.version.outputs.is-stable-release == 'true'
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
