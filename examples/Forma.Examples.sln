@@ -11,6 +11,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "console", "console", "{042A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Forma.Examples.Console.Mediator", "console\Forma.Examples.Console.Mediator\Forma.Examples.Console.Mediator.csproj", "{8B9DAC14-957B-4651-AD90-CC7402BB4BCA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Forma.Decorator", "Forma.Decorator\Forma.Decorator.csproj", "{60CDC673-76E9-4867-9560-2CFD1E3B99CB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Forma.Examples.Console.Decorator", "console\Forma.Examples.Console.Decorator\Forma.Examples.Console.Decorator.csproj", "{230B8296-A5D5-44D9-BFF0-3CDB250BC103}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,8 +36,17 @@ Global
 		{8B9DAC14-957B-4651-AD90-CC7402BB4BCA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8B9DAC14-957B-4651-AD90-CC7402BB4BCA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8B9DAC14-957B-4651-AD90-CC7402BB4BCA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{60CDC673-76E9-4867-9560-2CFD1E3B99CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{60CDC673-76E9-4867-9560-2CFD1E3B99CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{60CDC673-76E9-4867-9560-2CFD1E3B99CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{60CDC673-76E9-4867-9560-2CFD1E3B99CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{230B8296-A5D5-44D9-BFF0-3CDB250BC103}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{230B8296-A5D5-44D9-BFF0-3CDB250BC103}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{230B8296-A5D5-44D9-BFF0-3CDB250BC103}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{230B8296-A5D5-44D9-BFF0-3CDB250BC103}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{8B9DAC14-957B-4651-AD90-CC7402BB4BCA} = {042A72B0-900E-41BC-A470-B4779710BAD6}
+		{230B8296-A5D5-44D9-BFF0-3CDB250BC103} = {042A72B0-900E-41BC-A470-B4779710BAD6}
 	EndGlobalSection
 EndGlobal
