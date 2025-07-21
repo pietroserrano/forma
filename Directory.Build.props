@@ -22,7 +22,7 @@
     
     <!-- Controlla se usare riferimenti ai progetti o pacchetti NuGet -->
     <!-- Per default, in sviluppo locale, usiamo i riferimenti ai progetti -->
-    <UseProjectReferences Condition="'$(UseProjectReferences)' == ''">false</UseProjectReferences>
+    <UseProjectReferences Condition="'$(UseProjectReferences)' == ''">true</UseProjectReferences>
     
     <!-- Versione dei pacchetti NuGet da usare quando UseProjectReferences=false -->
     <!-- Definisce la versione da usare per i riferimenti ai pacchetti NuGet -->
