@@ -12,13 +12,14 @@ The Forma repository now automatically creates Git tags and GitHub releases when
 2. **NuGet Package Creation**: Creates and publishes NuGet packages
 3. **Version Detection**: Uses Nerdbank.GitVersioning to determine the current version
 4. **Stable Release Check**: Determines if this is a stable release (no prerelease suffix)
-5. **Git Tag Creation**: Creates an annotated Git tag with the version (e.g., `v1.1.0`) - **only for stable releases**
-6. **GitHub Release Creation**: Creates a GitHub release with detailed release notes - **only for stable releases**
+5. **Git Tag Creation**: Creates an annotated Git tag with the version (e.g., `v1.1.0`, `v1.2.0-preview123`)
+6. **GitHub Release Creation**: Creates a GitHub release with detailed release notes (marked as pre-release for preview versions)
 
 ### Automatic Features
 
-- **Stable Release Detection**: Only creates tags and releases for stable versions (no prerelease suffix)
-- **Prerelease Handling**: Preview/prerelease versions only publish to NuGet, skip tag/release creation
+- **Version Detection**: Automatically creates tags and releases for all versions (stable and preview)
+- **Pre-release Handling**: Preview/prerelease versions are marked as pre-releases in GitHub
+- **Stable Release Detection**: Stable versions create standard releases, preview versions create pre-releases
 - **Duplicate Prevention**: Checks for existing tags/releases before creating new ones
 - **Version Consistency**: Uses the same version from Nerdbank.GitVersioning for all components
 - **Rich Release Notes**: Includes package information, version details, and NuGet links
@@ -31,7 +32,7 @@ The Forma repository now automatically creates Git tags and GitHub releases when
 To release a single package with automatic tag/release creation:
 
 ```bash
-# Trigger the individual release workflow (creates tags/releases for stable versions)
+# Trigger the individual release workflow (creates tags/releases for all versions)
 gh workflow run release-core.yml
 ```
 
@@ -40,19 +41,19 @@ gh workflow run release-core.yml
 To release multiple packages with automatic tag/release creation:
 
 ```bash
-# Release all packages (creates tags/releases for stable versions)
+# Release all packages (creates tags/releases for all versions)
 gh workflow run release-all.yml -f packages=all
 
-# Release specific packages (creates tags/releases for stable versions)
+# Release specific packages (creates tags/releases for all versions)
 gh workflow run release-all.yml -f packages=core,mediator
 ```
 
 ### Development Builds
 
-Development builds on the `develop` branch automatically publish preview packages to NuGet but **do not** create Git tags or GitHub releases:
+Development builds on the `develop` branch automatically publish preview packages to NuGet and create Git tags and GitHub pre-releases:
 
 ```bash
-# These only create NuGet packages with preview suffixes (e.g., v1.1.0-preview123)
+# These create NuGet packages with preview suffixes (e.g., v1.1.0-preview123) and GitHub pre-releases
 git push origin develop
 ```
 
@@ -64,17 +65,17 @@ git push origin develop
 - **Behavior**: 
   - ✅ Publishes to NuGet
   - ✅ Creates Git tag
-  - ✅ Creates GitHub release
+  - ✅ Creates GitHub release (standard release)
 
 ### Preview/Prerelease Builds
 - **Format**: `v1.1.0-preview123`, `v1.2.0-preview456`, etc.
-- **Triggers**: Automatic builds on `develop` branch
+- **Triggers**: Automatic builds on `develop` branch or manual release workflows with preview versions
 - **Behavior**:
   - ✅ Publishes to NuGet
-  - ❌ Does not create Git tag
-  - ❌ Does not create GitHub release
+  - ✅ Creates Git tag
+  - ✅ Creates GitHub pre-release (marked as pre-release)
 
-This design ensures that only stable, production-ready releases create permanent Git tags and GitHub releases, while preview builds are available via NuGet for testing.
+This design ensures that both stable and preview releases are properly tracked with Git tags and GitHub releases, with preview releases clearly marked as pre-releases for testing.
 
 ## Generated Artifacts
 

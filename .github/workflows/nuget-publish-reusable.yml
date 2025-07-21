@@ -112,11 +112,11 @@ jobs:
           echo "This is a stable release - tags and releases will be created"
         else
           echo "is-stable-release=false" >> $GITHUB_OUTPUT
-          echo "This is a prerelease version - skipping tag and release creation"
+          echo "This is a prerelease version - tags and pre-releases will be created"
         fi
         
     - name: Create Git tag
-      if: success() && steps.version.outputs.version != '' && steps.version.outputs.is-stable-release == 'true'
+      if: success() && steps.version.outputs.version != ''
       run: |
         TAG_NAME="${{ steps.version.outputs.version }}"
         
@@ -135,7 +135,7 @@ jobs:
         fi
         
     - name: Create GitHub Release
-      if: success() && steps.version.outputs.version != '' && steps.version.outputs.is-stable-release == 'true'
+      if: success() && steps.version.outputs.version != ''
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
@@ -151,7 +151,11 @@ jobs:
           # Create release notes
           echo "## ${{ inputs.project-name }} $TAG_NAME" > release_notes.md
           echo "" >> release_notes.md
-          echo "This release contains the following package:" >> release_notes.md
+          if [ "${{ steps.version.outputs.is-stable-release }}" = "true" ]; then
+            echo "This release contains the following package:" >> release_notes.md
+          else
+            echo "This pre-release contains the following package:" >> release_notes.md
+          fi
           echo "- **${{ inputs.project-name }}** version ${{ steps.version.outputs.version }}" >> release_notes.md
           echo "" >> release_notes.md
           echo "### Changes" >> release_notes.md
@@ -166,11 +170,19 @@ jobs:
           echo "" >> release_notes.md
           echo "View this package on [NuGet.org](https://www.nuget.org/packages/${{ inputs.project-name }})." >> release_notes.md
 
-          # Create the release
-          gh release create "$TAG_NAME" \
-            --title "$RELEASE_NAME" \
-            --notes-file release_notes.md \
-            --latest=false
+          # Create the release (with --prerelease flag for preview versions)
+          if [ "${{ steps.version.outputs.is-stable-release }}" = "true" ]; then
+            gh release create "$TAG_NAME" \
+              --title "$RELEASE_NAME" \
+              --notes-file release_notes.md \
+              --latest=false
+          else
+            gh release create "$TAG_NAME" \
+              --title "$RELEASE_NAME" \
+              --notes-file release_notes.md \
+              --prerelease \
+              --latest=false
+          fi
             
           echo "GitHub release $TAG_NAME created successfully"
         fi
