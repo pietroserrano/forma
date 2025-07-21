@@ -88,8 +88,22 @@ dotnet run -c Release --project src/Forma.Benchmarks/Forma.Benchmarks.csproj
 
 ## 📋 Documentation
 
-- [Release Guide](./docs/release-guide.md) - Release strategy and instructions for maintainers
-- [Testing GitHub Actions](./docs/testing-github-actions.md) - How to test GitHub Actions workflows locally
+### Getting Started
+- [Installation](#installation) - How to install Forma packages
+- [Features](#features) - Overview of Forma capabilities
+- [Development](#development) - Local development setup
+
+### Release & Development
+- **[Release Guide](./docs/release-guide.md)** - Comprehensive guide for releasing packages
+- [Testing GitHub Actions](./docs/testing-github-actions.md) - How to test workflows locally
+- [Project vs NuGet References](./docs/project-vs-nuget-references.md) - Development vs CI/CD build configuration
+
+### Technical Documentation
+- [Workflow Documentation](./.github/workflows/README.md) - GitHub Actions workflows overview
+- [Logo Assets](./assets/README.md) - Forma logo and branding guidelines
+
+### Quick References
+- See the [Release Guide Quick Reference](./docs/release-guide.md#quick-reference) for common commands
 
 ## 🚀 Release Process
 

@@ -8,7 +8,9 @@ This document explains how to test Forma's GitHub Actions workflows locally befo
    - [Download Docker Desktop](https://www.docker.com/products/docker-desktop)
 
 2. **act**: A tool for running GitHub Actions locally
-   - Follow the instructions in `scripts/install-act.md` to install it
+   - **Windows**: `winget install nektos.act`
+   - **macOS/Linux**: `brew install act`
+   - **Linux (alternative)**: `curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash`
 
 ## Using the Test Scripts
 
