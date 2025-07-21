@@ -179,7 +179,7 @@ stop_local_nuget_server() {
 
 # Determine which workflow to test and set parameters
 WORKFLOW_FILE=""
-EVENT_NAME="push"
+EVENT_NAME="workflow_dispatch"
 EVENT_FILE=$(mktemp)
 TEMP_WORKFLOW_FILE=""
 
@@ -188,7 +188,9 @@ if [ "$WORKFLOW_TYPE" = "core" ]; then
     TAG_NAME="v${VERSION}-core"
     cat > "$EVENT_FILE" <<EOF
 {
-  "ref": "refs/tags/$TAG_NAME",
+  "inputs": {
+    "force-publish": true
+  },
   "repository": {
     "name": "forma",
     "owner": {
@@ -202,7 +204,9 @@ elif [ "$COMPONENT" = "chains" ]; then
     TAG_NAME="v${VERSION}-chains"
     cat > "$EVENT_FILE" <<EOF
 {
-  "ref": "refs/tags/$TAG_NAME",
+  "inputs": {
+    "force-publish": true
+  },
   "repository": {
     "name": "forma",
     "owner": {
@@ -216,7 +220,9 @@ elif [ "$COMPONENT" = "pubsub" ]; then
     TAG_NAME="v${VERSION}-pubsub"
     cat > "$EVENT_FILE" <<EOF
 {
-  "ref": "refs/tags/$TAG_NAME",
+  "inputs": {
+    "force-publish": true
+  },
   "repository": {
     "name": "forma",
     "owner": {
@@ -230,7 +236,9 @@ elif [ "$COMPONENT" = "mediator" ]; then
     TAG_NAME="v${VERSION}-mediator"
     cat > "$EVENT_FILE" <<EOF
 {
-  "ref": "refs/tags/$TAG_NAME",
+  "inputs": {
+    "force-publish": true
+  },
   "repository": {
     "name": "forma",
     "owner": {
@@ -244,7 +252,9 @@ elif [ "$COMPONENT" = "decorator" ]; then
     TAG_NAME="v${VERSION}-decorator"
     cat > "$EVENT_FILE" <<EOF
 {
-  "ref": "refs/tags/$TAG_NAME",
+  "inputs": {
+    "force-publish": true
+  },
   "repository": {
     "name": "forma",
     "owner": {
@@ -290,8 +300,8 @@ fi
 
 echo -e "\e[33mTesting workflow type '$WORKFLOW_TYPE' with tag '$TAG_NAME'...\e[0m"
 
-# Run act and simulate a tag push event
-act_cmd="act push --eventpath $EVENT_FILE -W $WORKFLOW_FILE --secret NUGET_API_KEY=$NUGET_API_KEY --container-architecture linux/amd64"
+# Run act and simulate a workflow_dispatch event
+act_cmd="act workflow_dispatch --eventpath $EVENT_FILE -W $WORKFLOW_FILE --secret NUGET_API_KEY=$NUGET_API_KEY --container-architecture linux/amd64"
 
 # Show the command
 echo -e "\e[36mAct command: $act_cmd --dryrun\e[0m"
