@@ -1,5 +1,7 @@
 <Project>
   <PropertyGroup>
+    <!-- Examples target .NET 8.0 for broad compatibility -->
+    <!-- Upgrade to net9.0 when .NET 9 SDK is available in the build environment -->
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>

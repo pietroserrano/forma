@@ -1,6 +1,13 @@
 #!/bin/bash
 
-echo "=== Running All Forma Console Examples ==="
+echo "=== Running All Forma Examples ==="
+echo ""
+
+echo "Building all examples first..."
+dotnet build
+echo ""
+
+echo "=== Console Examples ==="
 echo ""
 
 echo "1. Mediator Pattern Example"
@@ -27,4 +34,17 @@ cd ../Forma.Examples.Console.DependencyInjection
 dotnet run --no-build
 echo ""
 
-echo "=== All Examples Completed Successfully ==="
+echo "=== Web Examples ==="
+echo ""
+
+echo "5. ASP.NET Core Web API Example"
+echo "--------------------------------"
+echo "Starting web server on background (check console for URL)..."
+cd ../../web/Forma.Examples.Web.AspNetCore
+echo "To run the web example:"
+echo "  cd examples/web/Forma.Examples.Web.AspNetCore && dotnet run"
+echo "  Then browse to the URL shown in console + '/swagger'"
+echo ""
+
+echo "=== All Examples Ready ==="
+echo "Note: Web example requires manual start with 'dotnet run' in the web project directory"
