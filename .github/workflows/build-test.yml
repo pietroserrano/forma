@@ -3,8 +3,12 @@ name: Build and Test
 on:
   push:
     branches: [ main, develop, 'release_v*' ]
+    paths:
+      - 'src/**'
   pull_request:
     branches: [ main, develop, 'release_v*' ]
+    paths:
+      - 'src/**'
   workflow_dispatch:
 
 jobs:
