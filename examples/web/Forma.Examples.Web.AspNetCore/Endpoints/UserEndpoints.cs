@@ -1,4 +1,4 @@
-using Forma.Abstractions;
+using Forma.Core.Abstractions;
 using Forma.Examples.Web.AspNetCore.Models;
 
 namespace Forma.Examples.Web.AspNetCore.Endpoints;
@@ -8,8 +8,7 @@ public static class UserEndpoints
     public static void MapUserEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var users = endpoints.MapGroup("/api/users")
-            .WithTags("Users")
-            .WithOpenApi();
+            .WithTags("Users");
 
         // Get all users
         users.MapGet("/", async (IRequestMediator mediator, ILogger<Program> logger) =>

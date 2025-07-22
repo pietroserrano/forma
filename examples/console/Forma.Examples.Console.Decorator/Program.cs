@@ -34,6 +34,8 @@ public class Program
         var serviceProvider = services.BuildServiceProvider();
         
         System.Console.WriteLine("=== Forma Decorator Pattern Example ===\n");
+        System.Console.WriteLine($"Press key to continue...");
+        System.Console.ReadKey();
 
         // Example 1: Order Service with multiple decorators
         System.Console.WriteLine("1. Testing Order Service with multiple decorators...");
@@ -50,7 +52,9 @@ public class Program
         }
         
         System.Console.WriteLine();
-
+        
+        System.Console.WriteLine($"Press key to continue...");
+        System.Console.ReadKey();
         // Example 2: Order Service with invalid input (validation decorator test)
         System.Console.WriteLine("2. Testing validation decorator with invalid input...");
         try
@@ -63,6 +67,8 @@ public class Program
         }
         
         System.Console.WriteLine();
+        System.Console.WriteLine($"Press key to continue...");
+        System.Console.ReadKey();
 
         // Example 3: Notification Service with retry decorator
         System.Console.WriteLine("3. Testing Notification Service with retry decorator...");
@@ -70,6 +76,8 @@ public class Program
         
         await notificationService.SendNotificationAsync("Welcome!", "john@example.com");
         System.Console.WriteLine();
+        System.Console.WriteLine($"Press key to continue...");
+        System.Console.ReadKey();
 
         // Example 4: User Service with audit decorator
         System.Console.WriteLine("4. Testing User Service with audit decorator...");

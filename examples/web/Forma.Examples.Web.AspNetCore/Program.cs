@@ -70,7 +70,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseAuthorization();
 
 // Map API endpoints
 app.MapUserEndpoints();
