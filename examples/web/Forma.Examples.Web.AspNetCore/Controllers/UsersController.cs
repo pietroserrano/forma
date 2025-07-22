@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Forma.Abstractions;
+using Forma.Core.Abstractions;
 using Forma.Examples.Web.AspNetCore.Models;
 
 namespace Forma.Examples.Web.AspNetCore.Controllers;

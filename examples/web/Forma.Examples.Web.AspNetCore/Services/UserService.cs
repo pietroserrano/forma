@@ -1,4 +1,7 @@
+using Microsoft.EntityFrameworkCore;
 using Forma.Examples.Web.AspNetCore.Models;
+using Forma.Examples.Web.AspNetCore.Data;
+using Forma.Examples.Web.AspNetCore.Data.Entities;
 
 namespace Forma.Examples.Web.AspNetCore.Services;
 
@@ -14,66 +17,81 @@ public interface IUserService
 public class UserService : IUserService
 {
     private readonly ILogger<UserService> _logger;
-    
-    // In-memory storage for demonstration
-    private static readonly List<UserDto> _users = new();
-    private static int _nextId = 1;
+    private readonly FormaExamplesDbContext _dbContext;
 
-    public UserService(ILogger<UserService> logger)
+    public UserService(ILogger<UserService> logger, FormaExamplesDbContext dbContext)
     {
         _logger = logger;
+        _dbContext = dbContext;
     }
 
-    public Task<UserDto> CreateUserAsync(string name, string email)
+    public async Task<UserDto> CreateUserAsync(string name, string email)
     {
-        var user = new UserDto(_nextId++, name, email, DateTime.UtcNow);
-        _users.Add(user);
+        var user = new User
+        {
+            Name = name,
+            Email = email,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        _dbContext.Users.Add(user);
+        await _dbContext.SaveChangesAsync();
         
         _logger.LogInformation("User created: {UserId}", user.Id);
-        return Task.FromResult(user);
+        return MapToDto(user);
     }
 
-    public Task<UserDto?> GetUserAsync(int userId)
+    public async Task<UserDto?> GetUserAsync(int userId)
     {
-        var user = _users.FirstOrDefault(u => u.Id == userId);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
         _logger.LogInformation("User {UserId} retrieved: {Found}", userId, user != null);
-        return Task.FromResult(user);
+        return user != null ? MapToDto(user) : null;
     }
 
-    public Task<List<UserDto>> GetAllUsersAsync()
+    public async Task<List<UserDto>> GetAllUsersAsync()
     {
-        _logger.LogInformation("Retrieved {Count} users", _users.Count);
-        return Task.FromResult(_users.ToList());
+        var users = await _dbContext.Users.ToListAsync();
+        _logger.LogInformation("Retrieved {Count} users", users.Count);
+        return users.Select(MapToDto).ToList();
     }
 
-    public Task<UserDto?> UpdateUserAsync(int userId, string name, string email)
+    public async Task<UserDto?> UpdateUserAsync(int userId, string name, string email)
     {
-        var existingUser = _users.FirstOrDefault(u => u.Id == userId);
-        if (existingUser == null)
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (user == null)
         {
             _logger.LogWarning("User {UserId} not found for update", userId);
-            return Task.FromResult<UserDto?>(null);
+            return null;
         }
 
-        var updatedUser = new UserDto(userId, name, email, existingUser.CreatedAt);
-        var index = _users.IndexOf(existingUser);
-        _users[index] = updatedUser;
+        user.Name = name;
+        user.Email = email;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _dbContext.SaveChangesAsync();
         
         _logger.LogInformation("User {UserId} updated", userId);
-        return Task.FromResult<UserDto?>(updatedUser);
+        return MapToDto(user);
     }
 
-    public Task<bool> DeleteUserAsync(int userId)
+    public async Task<bool> DeleteUserAsync(int userId)
     {
-        var user = _users.FirstOrDefault(u => u.Id == userId);
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == userId);
         if (user == null)
         {
             _logger.LogWarning("User {UserId} not found for deletion", userId);
-            return Task.FromResult(false);
+            return false;
         }
 
-        _users.Remove(user);
+        _dbContext.Users.Remove(user);
+        await _dbContext.SaveChangesAsync();
+        
         _logger.LogInformation("User {UserId} deleted", userId);
-        return Task.FromResult(true);
+        return true;
+    }
+
+    private static UserDto MapToDto(User user)
+    {
+        return new UserDto(user.Id, user.Name, user.Email, user.CreatedAt);
     }
 }

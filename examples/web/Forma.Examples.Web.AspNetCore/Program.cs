@@ -1,8 +1,10 @@
+using Microsoft.EntityFrameworkCore;
 using Forma.Mediator.Extensions;
 using Forma.Decorator.Extensions;
 using Forma.Chains.Extensions;
 using Forma.Examples.Web.AspNetCore.Services;
 using Forma.Examples.Web.AspNetCore.Services.Decorators;
+using Forma.Examples.Web.AspNetCore.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +12,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Configure Entity Framework with SQLite
+builder.Services.AddDbContext<FormaExamplesDbContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection") ?? 
+                     "Data Source=FormaExamples.db"));
 
 // Add Forma Mediator
 builder.Services.AddRequestMediator(config =>
@@ -55,6 +62,13 @@ builder.Services.AddChain<Forma.Examples.Web.AspNetCore.Models.PaymentProcessing
     typeof(Forma.Examples.Web.AspNetCore.Chains.PaymentNotificationHandler));
 
 var app = builder.Build();
+
+// Ensure database is created and migrations are applied
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<FormaExamplesDbContext>();
+    dbContext.Database.EnsureCreated();
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

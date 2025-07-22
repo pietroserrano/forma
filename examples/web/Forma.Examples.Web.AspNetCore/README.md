@@ -1,6 +1,6 @@
 # Forma ASP.NET Core Web API Example
 
-This example demonstrates how to use Forma's design patterns in an ASP.NET Core Web API application, showcasing real-world usage of the Mediator, Decorator, and Chains patterns in a web context.
+This example demonstrates how to use Forma's design patterns in an ASP.NET Core Web API application, showcasing real-world usage of the Mediator, Decorator, and Chains patterns in a web context with **Entity Framework Core and SQLite** for persistent data storage.
 
 ## What This Example Demonstrates
 
@@ -24,6 +24,13 @@ This example demonstrates how to use Forma's design patterns in an ASP.NET Core 
 - **Error Handling**: Early termination when any step fails
 - **Request Tracking**: Processing steps are recorded for debugging and monitoring
 
+### 🗄️ **Entity Framework Core Integration**
+- **SQLite Database**: Lightweight, file-based database for development and testing
+- **Entity Models**: Properly configured entities with validation and constraints
+- **Database Seeding**: Initial data for testing and demonstration
+- **Automatic Migrations**: Database creation and schema management
+- **Repository Pattern**: UserService as a repository with EF Core integration
+
 ## Project Structure
 
 ```
@@ -31,18 +38,23 @@ Forma.Examples.Web.AspNetCore/
 ├── Controllers/
 │   ├── UsersController.cs       # REST API controller using mediator
 │   └── OrdersController.cs      # Order processing using chains
+├── Data/
+│   ├── Entities/
+│   │   └── User.cs              # EF Core entity models
+│   └── FormaExamplesDbContext.cs # Database context with seeding
 ├── Handlers/
 │   └── UserHandlers.cs          # Command and query handlers
 ├── Models/
 │   └── UserModels.cs            # DTOs and request/response models
 ├── Services/
-│   ├── UserService.cs           # Core business service
+│   ├── UserService.cs           # Core business service with EF Core
 │   └── Decorators/
 │       └── UserServiceDecorators.cs  # Service decorators
 ├── Chains/
 │   ├── OrderChainHandlers.cs    # Order processing chain handlers
 │   └── PaymentChainHandlers.cs  # Payment processing chain handlers
 ├── Program.cs                   # DI configuration and app setup
+├── appsettings.json             # Configuration with database connection
 └── README.md                    # This file
 ```
 
@@ -171,10 +183,22 @@ dotnet build
 dotnet run
 ```
 
+The application will automatically:
+- Create the SQLite database (`FormaExamples.db`) if it doesn't exist
+- Apply any pending migrations
+- Seed the database with initial user data
+- Start the web server
+
 The API will be available at:
 - **HTTPS**: `https://localhost:7XXX` (check console output for exact port)
 - **HTTP**: `http://localhost:5XXX`
 - **Swagger UI**: `https://localhost:7XXX/swagger`
+
+### **Database Information**
+- **Database File**: `FormaExamples.db` (created in the project root)
+- **Database Provider**: SQLite (Entity Framework Core)
+- **Initial Data**: Two sample users are seeded automatically
+- **Connection String**: Configured in `appsettings.json`
 
 ### **Testing the API**
 
@@ -236,21 +260,25 @@ curl -X GET "https://localhost:7XXX/api/orders/samples"
 - **Separation of Concerns**: Controllers, handlers, and services have distinct responsibilities
 - **Dependency Inversion**: Services depend on abstractions, not implementations
 - **Single Responsibility**: Each class has one clear purpose
+- **Data Persistence**: Entity Framework Core provides clean data access layer
 
 ### **🔧 Cross-Cutting Concerns**
 - **Automatic Logging**: Every service call is logged with timing information
 - **Input Validation**: Comprehensive validation without cluttering business logic
 - **Performance Optimization**: Transparent caching improves response times
+- **Database Integration**: Seamless EF Core integration with SQLite
 
 ### **🚀 Scalability Features**
 - **Request Processing**: Mediator pattern enables easy addition of new operations
 - **Service Enhancement**: Decorators allow adding features without changing core logic
 - **Error Handling**: Consistent error responses across all endpoints
+- **Database Management**: Entity Framework migrations support schema evolution
 
 ### **🧪 Testing Benefits**
 - **Isolated Testing**: Each handler can be tested independently
 - **Decorator Testing**: Cross-cutting concerns can be tested in isolation
 - **Mock-Friendly**: Interface-based design enables easy mocking
+- **Database Testing**: SQLite in-memory databases support fast unit tests
 
 ## Expected Output
 
@@ -262,10 +290,17 @@ info: LoggingUserServiceDecorator[0]
       Creating user: John Doe (john@example.com)
 info: ValidationUserServiceDecorator[0]
       Validating user input...
+info: Microsoft.EntityFrameworkCore.Database.Command[20101]
+      Executed DbCommand (45ms) [Parameters=[@p0='John Doe' (Size = 100), @p1='john@example.com' (Size = 255), @p2='2025-01-21 10:30:15'], CommandType='Text', CommandTimeout='30']
+      INSERT INTO "Users" ("Name", "Email", "CreatedAt")
+      VALUES (@p0, @p1, @p2);
+      SELECT "Id"
+      FROM "Users"
+      WHERE changes() = 1 AND "rowid" = last_insert_rowid();
 info: UserService[0]
-      User created: 1
+      User created: 3
 info: LoggingUserServiceDecorator[0]
-      User created successfully in 45.2ms
+      User created successfully in 52.1ms
 ```
 
 ### **Chains Pattern Logs:**
@@ -289,13 +324,39 @@ This example demonstrates how Forma patterns work together:
   - **Additional Decorators**: Retry logic, circuit breakers, audit trails
   - **Advanced Mediator Features**: Pipeline behaviors, notification handling
   - **Complex Chains**: Multi-step approval workflows, business process automation
-  - **Real Persistence**: Database integration with Entity Framework
+  - **Database Features**: Advanced EF Core features like change tracking, migrations, and relationships
+
+## Database Schema
+
+The SQLite database includes the following table:
+
+### **Users Table**
+```sql
+CREATE TABLE "Users" (
+    "Id" INTEGER NOT NULL CONSTRAINT "PK_Users" PRIMARY KEY AUTOINCREMENT,
+    "Name" TEXT NOT NULL,
+    "Email" TEXT NOT NULL,
+    "CreatedAt" TEXT NOT NULL,
+    "UpdatedAt" TEXT NULL
+);
+
+CREATE UNIQUE INDEX "IX_Users_Email" ON "Users" ("Email");
+```
+
+### **Sample Data**
+The database is automatically seeded with:
+```sql
+INSERT INTO Users (Id, Name, Email, CreatedAt) VALUES 
+(1, 'John Doe', 'john@example.com', '2024-01-21 10:00:00'),
+(2, 'Jane Smith', 'jane@example.com', '2024-01-21 10:00:00');
+```
 
 ## Performance Notes
 
-- **Caching**: Reduces database/service calls for frequently accessed users
+- **Caching**: Reduces database calls for frequently accessed users
 - **Validation**: Early validation prevents unnecessary processing
 - **Logging**: Structured logging enables performance monitoring
-- **Memory Usage**: In-memory storage is for demonstration only; use persistent storage in production
+- **Database Optimization**: Entity Framework Core provides efficient data access
+- **Connection Pooling**: Automatic database connection management
 
 This example provides a solid foundation for building robust ASP.NET Core APIs using Forma's design patterns.
