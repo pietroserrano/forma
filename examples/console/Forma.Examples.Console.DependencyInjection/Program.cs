@@ -114,7 +114,7 @@ public class ECommerceApplication
     public async Task RunDemoAsync()
     {
         _logger.LogInformation("Starting E-Commerce application demo");
-        System.Console.WriteLine($"Press key to continue...");
+        System.Console.WriteLine("Press key to continue...");
         System.Console.ReadKey();
 
         // Step 1: Create customer using Mediator pattern
@@ -124,7 +124,7 @@ public class ECommerceApplication
         var customer = await _mediator.SendAsync(new GetCustomerQuery(1));
         System.Console.WriteLine($"   Customer created: {customer.Name} ({customer.Email})");
         System.Console.WriteLine();
-        System.Console.WriteLine($"Press key to continue...");
+        System.Console.WriteLine("Press key to continue...");
         System.Console.ReadKey();
 
         // Step 2: Process order using both Mediator and Chains
@@ -137,7 +137,7 @@ public class ECommerceApplication
         
         System.Console.WriteLine($"   Order processed: {orderResult.OrderId} - Status: {orderResult.Status}");
         System.Console.WriteLine();
-        System.Console.WriteLine($"Press key to continue...");
+        System.Console.WriteLine("Press key to continue...");
         System.Console.ReadKey();
 
         // Step 3: Demonstrate chain execution directly
@@ -154,7 +154,7 @@ public class ECommerceApplication
         var chainResponse = await _orderChain.HandleAsync(chainRequest);
         System.Console.WriteLine($"   Chain result: {chainResponse?.Status} - Tracking: {chainResponse?.TrackingNumber}");
         System.Console.WriteLine();
-        System.Console.WriteLine($"Press key to continue...");
+        System.Console.WriteLine("Press key to continue...");
         System.Console.ReadKey();
 
         // Step 4: Show service decoration in action

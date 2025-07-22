@@ -33,7 +33,7 @@ public class Program
         var serviceProvider = services.BuildServiceProvider();
         
         System.Console.WriteLine("=== Forma Chains (Pipeline) Pattern Example ===\n");
-        System.Console.WriteLine($"Press key to continue...");
+        System.Console.WriteLine("Press key to continue...");
         System.Console.ReadKey();
 
         // Example 1: Payment processing pipeline (no response)
@@ -51,7 +51,7 @@ public class Program
         await paymentChain.HandleAsync(paymentRequest);
         
         System.Console.WriteLine("Payment processing completed. Steps executed:");
-        System.Console.WriteLine($"Press key to continue...");
+        System.Console.WriteLine("Press key to continue...");
         System.Console.ReadKey();
 
         foreach (var step in paymentRequest.Results)
@@ -75,7 +75,7 @@ public class Program
         var orderResponse = await orderChain.HandleAsync(orderRequest);
         
         System.Console.WriteLine("Order processing completed. Steps executed:");
-        System.Console.WriteLine($"Press key to continue...");
+        System.Console.WriteLine("Press key to continue...");
         System.Console.ReadKey();
 
         foreach (var step in orderRequest.Results)
