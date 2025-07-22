@@ -9,7 +9,6 @@ This directory contains the GitHub Actions workflows for the Forma project, desi
 - **`release_vX.Y` branches**: Stable version releases (no preview suffix)
 - **`develop` branch**: Preview version releases (with `-preview` suffix)
 - **`main` branch**: Not used for releases (CI/CD only)
-- **Git tags**: Manual release triggers (supports legacy tags)
 
 ### Workflow Files
 
@@ -50,11 +49,6 @@ This directory contains the GitHub Actions workflows for the Forma project, desi
    - Force-publish option
    - Comprehensive release summary
 
-#### Legacy Files (Backup)
-
-- `nuget-deploy.yml.old` - Legacy core package deploy workflow
-- `nuget-component-deploy.yml.old` - Legacy component package deploy workflow
-
 ## Usage
 
 ### Automatic Releases
@@ -68,14 +62,6 @@ This directory contains the GitHub Actions workflows for the Forma project, desi
 1. **Individual packages**: Use `release-core.yml`, `release-chains.yml`, or `release-pubsub.yml`
 2. **Multiple packages**: Use `release-all.yml` with package selection
 3. **Force publish**: Use the force-publish option to override change detection
-
-### Tag-based Releases
-
-Legacy tag support is maintained:
-- `v1.2.3` - Releases all packages
-- `v1.2.3-core` - Releases core packages only
-- `v1.2.3-chains` - Releases chains package only
-- `v1.2.3-pubsub` - Releases pubsub package only
 
 ## Secrets Required
 
