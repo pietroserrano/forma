@@ -35,18 +35,6 @@ builder.Services.Decorate<IUserService, ValidationUserServiceDecorator>();
 builder.Services.Decorate<IUserService, LoggingUserServiceDecorator>();
 
 // Add Forma Chains
-// Register chain handlers for order processing
-builder.Services.AddTransient<Forma.Examples.Web.AspNetCore.Chains.OrderValidationHandler>();
-builder.Services.AddTransient<Forma.Examples.Web.AspNetCore.Chains.InventoryCheckHandler>();
-builder.Services.AddTransient<Forma.Examples.Web.AspNetCore.Chains.OrderPricingHandler>();
-builder.Services.AddTransient<Forma.Examples.Web.AspNetCore.Chains.OrderCreationHandler>();
-
-// Register chain handlers for payment processing
-builder.Services.AddTransient<Forma.Examples.Web.AspNetCore.Chains.PaymentValidationHandler>();
-builder.Services.AddTransient<Forma.Examples.Web.AspNetCore.Chains.PaymentFraudDetectionHandler>();
-builder.Services.AddTransient<Forma.Examples.Web.AspNetCore.Chains.PaymentProcessingHandler>();
-builder.Services.AddTransient<Forma.Examples.Web.AspNetCore.Chains.PaymentNotificationHandler>();
-
 // Configure order processing chain
 builder.Services.AddChain<Forma.Examples.Web.AspNetCore.Models.OrderProcessingRequest, Forma.Examples.Web.AspNetCore.Models.OrderProcessingResponse>(
     typeof(Forma.Examples.Web.AspNetCore.Chains.OrderValidationHandler),
