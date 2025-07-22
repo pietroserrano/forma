@@ -51,14 +51,14 @@ public class Program
         await paymentChain.HandleAsync(paymentRequest);
         
         System.Console.WriteLine("Payment processing completed. Steps executed:");
-        System.Console.WriteLine("Press key to continue...");
-        System.Console.ReadKey();
 
         foreach (var step in paymentRequest.Results)
         {
             System.Console.WriteLine($"  ✓ {step}");
         }
         System.Console.WriteLine();
+        System.Console.WriteLine("Press key to continue...");
+        System.Console.ReadKey();
 
         // Example 2: Order processing pipeline (with response)
         System.Console.WriteLine("2. Processing order through chain...");
@@ -75,8 +75,6 @@ public class Program
         var orderResponse = await orderChain.HandleAsync(orderRequest);
         
         System.Console.WriteLine("Order processing completed. Steps executed:");
-        System.Console.WriteLine("Press key to continue...");
-        System.Console.ReadKey();
 
         foreach (var step in orderRequest.Results)
         {
@@ -84,6 +82,8 @@ public class Program
         }
         System.Console.WriteLine($"Order Result: ID={orderResponse?.OrderId}, Total=${orderResponse?.TotalAmount:F2}");
         System.Console.WriteLine();
+        System.Console.WriteLine("Press key to continue...");
+        System.Console.ReadKey();
 
         // Example 3: Failed payment processing (fraud detection)
         System.Console.WriteLine("3. Testing fraud detection in payment chain...");
