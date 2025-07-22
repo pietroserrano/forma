@@ -38,18 +38,24 @@ public class Program
         System.Console.WriteLine("1. Executing a simple command...");
         await mediator.SendAsync(new CreateUserCommand("John Doe", "john@example.com"));
         System.Console.WriteLine();
+        System.Console.WriteLine("Press key to continue...");
+        System.Console.ReadKey();
 
         // Example 2: Query with response
         System.Console.WriteLine("2. Executing a query...");
         var user = await mediator.SendAsync(new GetUserQuery(1));
         System.Console.WriteLine($"Retrieved user: {user.Name} ({user.Email})");
         System.Console.WriteLine();
+        System.Console.WriteLine("Press key to continue...");
+        System.Console.ReadKey();
 
         // Example 3: Command with response
         System.Console.WriteLine("3. Executing a command with response...");
         var orderId = await mediator.SendAsync(new CreateOrderCommand("Product A", 2));
         System.Console.WriteLine($"Created order with ID: {orderId}");
         System.Console.WriteLine();
+        System.Console.WriteLine("Press key to continue...");
+        System.Console.ReadKey();
 
         // Example 4: Processing with pipeline behaviors
         System.Console.WriteLine("4. Command with validation pipeline...");

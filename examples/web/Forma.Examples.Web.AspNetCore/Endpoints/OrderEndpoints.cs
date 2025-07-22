@@ -1,4 +1,3 @@
-using Forma.Chains.Abstractions;
 using Forma.Examples.Web.AspNetCore.Models;
 
 namespace Forma.Examples.Web.AspNetCore.Endpoints;
@@ -8,8 +7,7 @@ public static class OrderEndpoints
     public static void MapOrderEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var orders = endpoints.MapGroup("/api/orders")
-            .WithTags("Orders")
-            .WithOpenApi();
+            .WithTags("Orders");
 
         // Create order
         orders.MapPost("/", async (

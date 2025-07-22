@@ -16,18 +16,6 @@ public class Program
         // Add logging
         services.AddLogging(builder => builder.AddConsole());
         
-        // Register chain handlers for payment processing
-        services.AddTransient<ValidationHandler>();
-        services.AddTransient<FraudDetectionHandler>();
-        services.AddTransient<PaymentProcessingHandler>();
-        services.AddTransient<NotificationHandler>();
-        
-        // Register chain handlers for order processing with response
-        services.AddTransient<OrderValidationHandler>();
-        services.AddTransient<InventoryCheckHandler>();
-        services.AddTransient<PricingHandler>();
-        services.AddTransient<OrderCreationHandler>();
-        
         // Configure chains using Forma
         services.AddChain<PaymentRequest>(
             typeof(ValidationHandler), 
@@ -45,6 +33,8 @@ public class Program
         var serviceProvider = services.BuildServiceProvider();
         
         System.Console.WriteLine("=== Forma Chains (Pipeline) Pattern Example ===\n");
+        System.Console.WriteLine("Press key to continue...");
+        System.Console.ReadKey();
 
         // Example 1: Payment processing pipeline (no response)
         System.Console.WriteLine("1. Processing payment through chain...");
@@ -61,11 +51,14 @@ public class Program
         await paymentChain.HandleAsync(paymentRequest);
         
         System.Console.WriteLine("Payment processing completed. Steps executed:");
+
         foreach (var step in paymentRequest.Results)
         {
             System.Console.WriteLine($"  ✓ {step}");
         }
         System.Console.WriteLine();
+        System.Console.WriteLine("Press key to continue...");
+        System.Console.ReadKey();
 
         // Example 2: Order processing pipeline (with response)
         System.Console.WriteLine("2. Processing order through chain...");
@@ -82,12 +75,15 @@ public class Program
         var orderResponse = await orderChain.HandleAsync(orderRequest);
         
         System.Console.WriteLine("Order processing completed. Steps executed:");
+
         foreach (var step in orderRequest.Results)
         {
             System.Console.WriteLine($"  ✓ {step}");
         }
         System.Console.WriteLine($"Order Result: ID={orderResponse?.OrderId}, Total=${orderResponse?.TotalAmount:F2}");
         System.Console.WriteLine();
+        System.Console.WriteLine("Press key to continue...");
+        System.Console.ReadKey();
 
         // Example 3: Failed payment processing (fraud detection)
         System.Console.WriteLine("3. Testing fraud detection in payment chain...");
