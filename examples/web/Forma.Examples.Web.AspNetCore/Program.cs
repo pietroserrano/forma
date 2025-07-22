@@ -5,11 +5,14 @@ using Forma.Chains.Extensions;
 using Forma.Examples.Web.AspNetCore.Services;
 using Forma.Examples.Web.AspNetCore.Services.Decorators;
 using Forma.Examples.Web.AspNetCore.Data;
+using Forma.Examples.Web.AspNetCore.Models;
+using Forma.Abstractions;
+using Forma.Core.Abstractions;
+using Forma.Chains.Abstractions;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -67,7 +70,263 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
-app.MapControllers();
+
+// Configure API endpoints
+var api = app.MapGroup("/api");
+
+// Users endpoints
+var users = api.MapGroup("/users")
+    .WithTags("Users")
+    .WithOpenApi();
+
+// Get all users
+users.MapGet("/", async (IRequestMediator mediator, ILogger<Program> logger) =>
+{
+    try
+    {
+        var users = await mediator.SendAsync(new GetAllUsersQuery());
+        return Results.Ok(users);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error retrieving all users");
+        return Results.Problem("Internal server error");
+    }
+})
+.WithSummary("Get all users")
+.WithDescription("Retrieves a list of all users in the system")
+.Produces<List<UserDto>>();
+
+// Get user by ID
+users.MapGet("/{id:int}", async (int id, IRequestMediator mediator, ILogger<Program> logger) =>
+{
+    try
+    {
+        var user = await mediator.SendAsync(new GetUserQuery(id));
+        return Results.Ok(user);
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound($"User with ID {id} not found");
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error retrieving user {UserId}", id);
+        return Results.Problem("Internal server error");
+    }
+})
+.WithSummary("Get a specific user by ID")
+.WithDescription("Retrieves a user by their unique identifier")
+.Produces<UserDto>()
+.Produces(404)
+.Produces(400);
+
+// Create user
+users.MapPost("/", async (CreateUserRequest request, IRequestMediator mediator, ILogger<Program> logger) =>
+{
+    try
+    {
+        var command = new CreateUserCommand(request.Name, request.Email);
+        var result = await mediator.SendAsync(command);
+        return Results.Created($"/api/users/{result.Id}", result);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error creating user");
+        return Results.Problem("Internal server error");
+    }
+})
+.WithSummary("Create a new user")
+.WithDescription("Creates a new user with the provided information")
+.Accepts<CreateUserRequest>("application/json")
+.Produces<UserCreatedResponse>(201)
+.Produces(400);
+
+// Update user
+users.MapPut("/{id:int}", async (int id, CreateUserRequest request, IRequestMediator mediator, ILogger<Program> logger) =>
+{
+    try
+    {
+        var command = new UpdateUserCommand(id, request.Name, request.Email);
+        var result = await mediator.SendAsync(command);
+        return Results.Ok(result);
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound($"User with ID {id} not found");
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error updating user {UserId}", id);
+        return Results.Problem("Internal server error");
+    }
+})
+.WithSummary("Update an existing user")
+.WithDescription("Updates an existing user with new information")
+.Accepts<CreateUserRequest>("application/json")
+.Produces<UserDto>()
+.Produces(404)
+.Produces(400);
+
+// Delete user
+users.MapDelete("/{id:int}", async (int id, IRequestMediator mediator, ILogger<Program> logger) =>
+{
+    try
+    {
+        await mediator.SendAsync(new DeleteUserCommand(id));
+        return Results.NoContent();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound($"User with ID {id} not found");
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error deleting user {UserId}", id);
+        return Results.Problem("Internal server error");
+    }
+})
+.WithSummary("Delete a user")
+.WithDescription("Deletes a user from the system")
+.Produces(204)
+.Produces(404)
+.Produces(400);
+
+// Orders endpoints
+var orders = api.MapGroup("/orders")
+    .WithTags("Orders")
+    .WithOpenApi();
+
+// Create order
+orders.MapPost("/", async (
+    CreateOrderRequest request,
+    IChainInvoker<OrderProcessingRequest, OrderProcessingResponse> orderChain,
+    ILogger<Program> logger) =>
+{
+    try
+    {
+        var processingRequest = new OrderProcessingRequest
+        {
+            ProductId = request.ProductId,
+            Quantity = request.Quantity,
+            CustomerId = request.CustomerId,
+            CustomerEmail = request.CustomerEmail,
+            RequestId = Guid.NewGuid().ToString()
+        };
+
+        logger.LogInformation("Processing order creation for customer {CustomerId}", request.CustomerId);
+        
+        var response = await orderChain.HandleAsync(processingRequest);
+        
+        return Results.Ok(response);
+    }
+    catch (ArgumentException ex)
+    {
+        logger.LogWarning("Invalid order request: {Message}", ex.Message);
+        return Results.BadRequest(new { error = ex.Message });
+    }
+    catch (InvalidOperationException ex)
+    {
+        logger.LogWarning("Order processing failed: {Message}", ex.Message);
+        return Results.BadRequest(new { error = ex.Message });
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Unexpected error during order creation");
+        return Results.Problem("An unexpected error occurred");
+    }
+})
+.WithSummary("Create a new order using the order processing chain")
+.WithDescription("Creates a new order through the validation, inventory, pricing, and creation chain")
+.Accepts<CreateOrderRequest>("application/json")
+.Produces<OrderProcessingResponse>()
+.Produces(400);
+
+// Process payment
+orders.MapPost("/{orderId}/payment", async (
+    string orderId,
+    ProcessPaymentRequest request,
+    IChainInvoker<PaymentProcessingRequest> paymentChain,
+    ILogger<Program> logger) =>
+{
+    try
+    {
+        var processingRequest = new PaymentProcessingRequest
+        {
+            OrderId = orderId,
+            Amount = request.Amount,
+            CardNumber = request.CardNumber,
+            CustomerEmail = request.CustomerEmail,
+            RequestId = Guid.NewGuid().ToString()
+        };
+
+        logger.LogInformation("Processing payment for order {OrderId}", orderId);
+        
+        await paymentChain.HandleAsync(processingRequest);
+        
+        return Results.Ok(new { message = "Payment processed successfully", orderId });
+    }
+    catch (ArgumentException ex)
+    {
+        logger.LogWarning("Invalid payment request: {Message}", ex.Message);
+        return Results.BadRequest(new { error = ex.Message });
+    }
+    catch (InvalidOperationException ex)
+    {
+        logger.LogWarning("Payment processing failed: {Message}", ex.Message);
+        return Results.BadRequest(new { error = ex.Message });
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Unexpected error during payment processing");
+        return Results.Problem("An unexpected error occurred");
+    }
+})
+.WithSummary("Process payment using the payment processing chain")
+.WithDescription("Processes payment through the validation, fraud detection, payment, and notification chain")
+.Accepts<ProcessPaymentRequest>("application/json")
+.Produces<object>()
+.Produces(400);
+
+// Get sample data
+orders.MapGet("/samples", () =>
+{
+    return Results.Ok(new
+    {
+        orderSample = new CreateOrderRequest
+        {
+            ProductId = "PROD-001",
+            Quantity = 2,
+            CustomerId = "CUST-123",
+            CustomerEmail = "customer@example.com"
+        },
+        paymentSample = new ProcessPaymentRequest
+        {
+            Amount = 99.99m,
+            CardNumber = "4532-1234-5678-9012",
+            CustomerEmail = "customer@example.com"
+        }
+    });
+})
+.WithSummary("Get sample data for testing chains")
+.WithDescription("Returns sample data that can be used to test the order and payment chains")
+.Produces<object>();
 
 // Add a simple health check endpoint
 app.MapGet("/health", () => new { Status = "Healthy", Timestamp = DateTime.UtcNow })

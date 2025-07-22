@@ -1,12 +1,12 @@
-# Forma ASP.NET Core Web API Example
+# Forma ASP.NET Core Minimal API Example
 
-This example demonstrates how to use Forma's design patterns in an ASP.NET Core Web API application, showcasing real-world usage of the Mediator, Decorator, and Chains patterns in a web context with **Entity Framework Core and SQLite** for persistent data storage.
+This example demonstrates how to use Forma's design patterns in an ASP.NET Core Minimal API application, showcasing real-world usage of the Mediator, Decorator, and Chains patterns in a modern web context with **Entity Framework Core and SQLite** for persistent data storage.
 
 ## What This Example Demonstrates
 
-### 🎯 **Mediator Pattern in Web APIs**
+### 🎯 **Mediator Pattern in Minimal APIs**
 - **CQRS Implementation**: Commands and queries handled through the mediator
-- **Controller Simplification**: Controllers become thin layers that delegate to mediator
+- **Endpoint Simplification**: Minimal API endpoints become clean, focused functions
 - **Request/Response Handling**: Structured approach to API request processing
 - **Error Handling**: Centralized error handling and logging
 
@@ -35,9 +35,6 @@ This example demonstrates how to use Forma's design patterns in an ASP.NET Core 
 
 ```
 Forma.Examples.Web.AspNetCore/
-├── Controllers/
-│   ├── UsersController.cs       # REST API controller using mediator
-│   └── OrdersController.cs      # Order processing using chains
 ├── Data/
 │   ├── Entities/
 │   │   └── User.cs              # EF Core entity models
@@ -53,7 +50,7 @@ Forma.Examples.Web.AspNetCore/
 ├── Chains/
 │   ├── OrderChainHandlers.cs    # Order processing chain handlers
 │   └── PaymentChainHandlers.cs  # Payment processing chain handlers
-├── Program.cs                   # DI configuration and app setup
+├── Program.cs                   # DI configuration, endpoint mapping, and app setup
 ├── appsettings.json             # Configuration with database connection
 └── README.md                    # This file
 ```
@@ -114,14 +111,27 @@ The example provides multiple APIs demonstrating different patterns:
 
 ### **Mediator Pattern**
 ```csharp
-// Controller method
-[HttpPost]
-public async Task<ActionResult<UserCreatedResponse>> CreateUser([FromBody] CreateUserRequest request)
+// Minimal API endpoint
+users.MapPost("/", async (CreateUserRequest request, IRequestMediator mediator, ILogger<Program> logger) =>
 {
-    var command = new CreateUserCommand(request.Name, request.Email);
-    var result = await _mediator.SendAsync(command);
-    return CreatedAtAction(nameof(GetUser), new { id = result.Id }, result);
-}
+    try
+    {
+        var command = new CreateUserCommand(request.Name, request.Email);
+        var result = await mediator.SendAsync(command);
+        return Results.Created($"/api/users/{result.Id}", result);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error creating user");
+        return Results.Problem("Internal server error");
+    }
+})
+.WithSummary("Create a new user")
+.WithDescription("Creates a new user with the provided information");
 
 // Handler implementation
 public class CreateUserCommandHandler : IHandler<CreateUserCommand, UserCreatedResponse>
@@ -257,10 +267,11 @@ curl -X GET "https://localhost:7XXX/api/orders/samples"
 ## Key Benefits Demonstrated
 
 ### **🏗️ Clean Architecture**
-- **Separation of Concerns**: Controllers, handlers, and services have distinct responsibilities
+- **Separation of Concerns**: Endpoints, handlers, and services have distinct responsibilities
 - **Dependency Inversion**: Services depend on abstractions, not implementations
-- **Single Responsibility**: Each class has one clear purpose
+- **Single Responsibility**: Each endpoint and class has one clear purpose
 - **Data Persistence**: Entity Framework Core provides clean data access layer
+- **Minimal API Benefits**: Reduced ceremony, better performance, and cleaner code
 
 ### **🔧 Cross-Cutting Concerns**
 - **Automatic Logging**: Every service call is logged with timing information
