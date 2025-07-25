@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<!-- TargetFramework e Nullable sono definiti in Directory.Build.props -->
+
+		<!-- Project-specific NuGet package properties -->
+		<PackageId>Forma.FP</PackageId>
+		<Description>Forma module that provides a functional-programming infrastructure for .NET services.</Description>
+		<PackageTags>functiona-programming fp pipeline forma dotnet</PackageTags>
+	</PropertyGroup>
+
+	<!-- Riferimento condizionale: progetto in locale, pacchetto NuGet in cloud -->
+	<ItemGroup Condition="'$(UseProjectReferences)' == 'true'">
+		<ProjectReference Include="..\Forma.Core\Forma.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup Condition="'$(UseProjectReferences)' != 'true'">
+		<PackageReference Include="Forma.Core" Version="$(FormaVersion)" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.5" />
+	</ItemGroup>
+</Project>

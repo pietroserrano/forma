@@ -17,13 +17,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Forma.Examples.Console.Depe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Forma.Examples.Web.AspNetCore", "web\Forma.Examples.Web.AspNetCore\Forma.Examples.Web.AspNetCore.csproj", "{E1A2B3C4-5678-9012-3456-789ABCDEF012}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Forma.Examples.Console.FP", "console\Forma.Examples.Console.FP\Forma.Examples.Console.FP.csproj", "{A2695383-9FCA-447F-9585-85F60C91C673}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{90FDF8AA-B011-4339-BAC8-7A479A498558}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -46,6 +45,13 @@ Global
 		{E1A2B3C4-5678-9012-3456-789ABCDEF012}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E1A2B3C4-5678-9012-3456-789ABCDEF012}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E1A2B3C4-5678-9012-3456-789ABCDEF012}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2695383-9FCA-447F-9585-85F60C91C673}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2695383-9FCA-447F-9585-85F60C91C673}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2695383-9FCA-447F-9585-85F60C91C673}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2695383-9FCA-447F-9585-85F60C91C673}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{90FDF8AA-B011-4339-BAC8-7A479A498558} = {26026A2A-3639-4D7B-8689-CB00B02AAB5A}
@@ -53,5 +59,9 @@ Global
 		{9968347E-A1AF-4485-95E5-A17C2DF8014D} = {26026A2A-3639-4D7B-8689-CB00B02AAB5A}
 		{D24FC7D1-29BE-4713-ACF9-DA8DF57C2F52} = {26026A2A-3639-4D7B-8689-CB00B02AAB5A}
 		{E1A2B3C4-5678-9012-3456-789ABCDEF012} = {F8E9A2B3-1234-4567-8901-23456789ABCD}
+		{A2695383-9FCA-447F-9585-85F60C91C673} = {26026A2A-3639-4D7B-8689-CB00B02AAB5A}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D2FCD190-F338-4AB8-9ADD-0FEC606A0AD8}
 	EndGlobalSection
 EndGlobal
