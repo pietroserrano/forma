@@ -15,9 +15,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Reference Include="Forma.FP">
-	    <HintPath>..\..\..\src\Forma.FP\bin\Debug\net9.0\Forma.FP.dll</HintPath>
-	  </Reference>
+	  <ProjectReference Include="..\..\..\src\Forma.Core\Forma.Core.csproj" />
 	</ItemGroup>
 
 </Project>

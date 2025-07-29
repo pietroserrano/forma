@@ -1,4 +1,4 @@
-﻿using Forma.FP.Abstractions;
+﻿using Forma.Core.FP;
 
 var pipeline = Step1("5")
     .Then(Step2)
@@ -7,7 +7,7 @@ var pipeline = Step1("5")
     .OnError(error => Console.WriteLine($"Errore: {error.Message}"));
 
 
-var optionPipeline = OptionStep1("5")
+var optionPipeline = OptionStep1("s")
     .Then(OptionStep2)
     .Then(OptionStep3)
     .Match(
@@ -33,7 +33,7 @@ static Option<string> OptionStep3(int x)
 }
 
 
-
+// Funzioni che restituiscono Result
 static Result<int, Exception> Step1(string s)
 {
     if (int.TryParse(s, out int val)) return Result<int, Exception>.Success(val);
