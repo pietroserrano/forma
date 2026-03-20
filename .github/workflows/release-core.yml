@@ -9,6 +9,10 @@ on:
         default: false
         type: boolean
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   # Check if Core package has changes
   detect-changes:
