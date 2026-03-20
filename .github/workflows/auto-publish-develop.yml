@@ -4,6 +4,10 @@ on:
   push:
     branches: [ develop ]
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   # Check which packages have changes
   detect-changes:

@@ -14,6 +14,10 @@ on:
         default: false
         type: boolean
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   # Parse input and determine which packages to release
   parse-input:
