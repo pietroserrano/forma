@@ -1,21 +1,6 @@
 ---
 layout: home
 
-hero:
-  name: "Forma"
-  text: "Behavioral Patterns for .NET"
-  tagline: Lightweight, modular, and blazing fast. Build composable, decoupled, and maintainable application flows with clean architectural principles.
-  image:
-    src: /favicon.svg
-    alt: Forma Logo
-  actions:
-    - theme: brand
-      text: Get Started
-      link: /getting-started
-    - theme: alt
-      text: View on GitHub
-      link: https://github.com/pietroserrano/forma
-
 features:
   - icon: 🔀
     title: Mediator Pattern
