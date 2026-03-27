@@ -37,7 +37,7 @@ export default defineConfig({
       },
       {
         text: 'NuGet',
-        link: 'https://www.nuget.org/packages?q=Forma',
+        link: 'https://www.nuget.org/packages?q=Forma+pserrano',
         target: '_blank',
       },
     ],
