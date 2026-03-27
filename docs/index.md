@@ -49,42 +49,5 @@ features:
     linkText: Explore core
 ---
 
-<div class="home-badges">
-  <a href="https://github.com/pietroserrano/forma/actions/workflows/build-test.yml" target="_blank" rel="noreferrer">
-    <img src="https://github.com/pietroserrano/forma/actions/workflows/build-test.yml/badge.svg" alt="Build and Test" />
-  </a>
-  <a href="https://www.nuget.org/packages/Forma.Core/" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/nuget/v/Forma.Core.svg?label=Forma.Core" alt="Forma.Core" />
-  </a>
-  <a href="https://www.nuget.org/packages/Forma.Mediator/" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/nuget/v/Forma.Mediator.svg?label=Forma.Mediator" alt="Forma.Mediator" />
-  </a>
-  <a href="https://www.nuget.org/packages/Forma.Decorator/" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/nuget/v/Forma.Decorator.svg?label=Forma.Decorator" alt="Forma.Decorator" />
-  </a>
-  <a href="https://www.nuget.org/packages/Forma.Chains/" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/nuget/v/Forma.Chains.svg?label=Forma.Chains" alt="Forma.Chains" />
-  </a>
-  <a href="https://www.nuget.org/packages/Forma.PubSub.InMemory/" target="_blank" rel="noreferrer">
-    <img src="https://img.shields.io/nuget/v/Forma.PubSub.InMemory.svg?label=Forma.PubSub.InMemory" alt="Forma.PubSub.InMemory" />
-  </a>
-</div>
+<HomeContent />
 
-<style>
-.home-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-  padding: 32px 24px 48px;
-  align-items: center;
-}
-.home-badges a {
-  display: inline-flex;
-  align-items: center;
-}
-.home-badges img {
-  height: 20px;
-  display: block;
-}
-</style>
