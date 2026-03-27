@@ -22,17 +22,17 @@ const { Layout } = DefaultTheme
             Open source &nbsp;·&nbsp; MIT License
           </div>
 
-          <!-- ── Main title ────────────────────────────── -->
-          <h1 class="fh-title">
+          <!-- ── Main title / logo ─────────────────────── -->
+          <div class="fh-title">
             <span class="fh-title__eyebrow">Behavioral Patterns for .NET</span>
-            <span class="fh-title__name" aria-label="Forma">
-              <span class="fh-title__letter" style="--d:0ms">F</span>
-              <span class="fh-title__letter" style="--d:60ms">O</span>
-              <span class="fh-title__letter" style="--d:120ms">R</span>
-              <span class="fh-title__letter" style="--d:180ms">M</span>
-              <span class="fh-title__letter" style="--d:240ms">A</span>
-            </span>
-          </h1>
+            <img
+              src="/logo-dark.svg"
+              alt="Forma"
+              class="fh-title__logo"
+              width="220"
+              height="220"
+            />
+          </div>
 
           <!-- ── Tagline + pattern ticker ──────────────── -->
           <p class="fh-tagline">

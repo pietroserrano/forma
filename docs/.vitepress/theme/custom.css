@@ -488,10 +488,14 @@
   50%       { box-shadow: 0 0 0 6px rgba(67,160,71,0);   }
 }
 
-/* ── Main title ─────────────────────────────────────────────── */
+/* ── Main title / logo ──────────────────────────────────────── */
 .fh-title {
   margin: 0 0 20px;
   line-height: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
 }
 .fh-title__eyebrow {
   display: block;
@@ -500,36 +504,23 @@
   text-transform: uppercase;
   letter-spacing: 0.18em;
   color: rgba(255,255,255,0.45);
-  margin-bottom: 12px;
 }
-.fh-title__name {
-  display: block;
-  font-size: clamp(4.5rem, 12vw, 8.5rem);
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  line-height: 1;
-  /* Animated gradient text */
-  background: linear-gradient(90deg, #5D87E8, #7C4DFF, #00BCD4, #5D87E8, #7C4DFF);
-  background-size: 300% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: fh-gradient-pan 5s linear infinite;
+/* Logo image — entrance + continuous glow */
+.fh-title__logo {
+  width: clamp(160px, 28vw, 220px);
+  height: auto;
+  animation:
+    fh-logo-in   0.7s cubic-bezier(0.22, 1, 0.36, 1) both,
+    fh-logo-glow 4s ease-in-out infinite 0.7s;
 }
-@keyframes fh-gradient-pan {
-  from { background-position: 0%   center; }
-  to   { background-position: 300% center; }
+@keyframes fh-logo-in {
+  from { opacity: 0; transform: scale(0.75) translateY(20px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
 }
-
-/* Staggered letter entrance */
-.fh-title__letter {
-  display: inline-block;
-  animation: fh-letter-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: var(--d, 0ms);
-}
-@keyframes fh-letter-in {
-  from { opacity: 0; transform: translateY(28px) scale(0.82); }
-  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+@keyframes fh-logo-glow {
+  0%, 100% { filter: drop-shadow(0 0  8px rgba( 93,135,232,0.45)) drop-shadow(0 0 24px rgba( 93,135,232,0.2));  }
+  40%      { filter: drop-shadow(0 0 18px rgba(124, 77,255,0.55)) drop-shadow(0 0 40px rgba(124, 77,255,0.25)); }
+  70%      { filter: drop-shadow(0 0 14px rgba(  0,188,212,0.5))  drop-shadow(0 0 32px rgba(  0,188,212,0.2));  }
 }
 
 /* ── Tagline ────────────────────────────────────────────────── */
