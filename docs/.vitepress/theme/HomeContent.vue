@@ -1,4 +1,5 @@
 <script setup>
+import { withBase } from 'vitepress'
 // static showcase component — no reactive state needed
 </script>
 
@@ -101,7 +102,7 @@
           Define a request, write a handler — Forma wires everything through the DI container.
           No base classes, no magic strings, no reflection surprises.
         </p>
-        <a class="hs-cta" href="/getting-started">Explore all patterns →</a>
+        <a class="hs-cta" :href="withBase('/getting-started')">Explore all patterns →</a>
       </div>
 
       <div class="hs-win">
