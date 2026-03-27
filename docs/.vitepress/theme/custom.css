@@ -1,0 +1,124 @@
+/* Forma brand colors */
+:root {
+  --forma-blue: #5D87E8;
+  --forma-purple: #7C4DFF;
+  --forma-red: #FF5252;
+  --forma-green: #43A047;
+  --forma-yellow: #FFC107;
+  --forma-cyan: #00BCD4;
+  --forma-dark: #1a1a2e;
+  --forma-text: #333333;
+
+  /* VitePress color overrides — light mode */
+  --vp-c-brand-1: #5D87E8;
+  --vp-c-brand-2: #4a74d5;
+  --vp-c-brand-3: #3a64c5;
+  --vp-c-brand-soft: rgba(93, 135, 232, 0.14);
+
+  --vp-button-brand-bg: var(--forma-blue);
+  --vp-button-brand-hover-bg: #4a74d5;
+  --vp-button-brand-active-bg: #3a64c5;
+
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(
+    135deg,
+    var(--forma-blue) 0%,
+    var(--forma-purple) 50%,
+    var(--forma-cyan) 100%
+  );
+  --vp-home-hero-image-background-image: radial-gradient(
+    ellipse at center,
+    rgba(93, 135, 232, 0.15) 0%,
+    rgba(124, 77, 255, 0.1) 40%,
+    transparent 70%
+  );
+  --vp-home-hero-image-filter: blur(56px);
+}
+
+/* Dark mode overrides */
+.dark {
+  --vp-c-brand-1: #7ba4ef;
+  --vp-c-brand-2: #5D87E8;
+  --vp-c-brand-3: #4a74d5;
+  --vp-c-brand-soft: rgba(93, 135, 232, 0.16);
+
+  --vp-home-hero-name-background: linear-gradient(
+    135deg,
+    #7ba4ef 0%,
+    #9e7aff 50%,
+    #26d4ea 100%
+  );
+  --vp-home-hero-image-background-image: radial-gradient(
+    ellipse at center,
+    rgba(93, 135, 232, 0.25) 0%,
+    rgba(124, 77, 255, 0.15) 40%,
+    transparent 70%
+  );
+}
+
+/* Hero image glow */
+.VPHero .image-bg {
+  width: 260px;
+  height: 260px;
+}
+
+/* Feature cards — colored left border */
+.VPFeature {
+  border-left: 3px solid transparent;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.VPFeature:hover {
+  transform: translateY(-2px);
+}
+
+.VPFeature:nth-child(1) { border-left-color: var(--forma-blue); }
+.VPFeature:nth-child(2) { border-left-color: var(--forma-purple); }
+.VPFeature:nth-child(3) { border-left-color: var(--forma-red); }
+.VPFeature:nth-child(4) { border-left-color: var(--forma-cyan); }
+.VPFeature:nth-child(5) { border-left-color: var(--forma-green); }
+.VPFeature:nth-child(6) { border-left-color: var(--forma-yellow); }
+
+/* Code blocks */
+.vp-doc div[class*='language-'] {
+  border-radius: 8px;
+}
+
+/* Navbar logo sizing */
+.VPNavBarTitle .logo {
+  height: 28px;
+  width: auto;
+}
+
+/* Badge styles for package names */
+.package-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
+  margin-left: 6px;
+}
+
+/* Benchmark table improvements */
+.vp-doc table {
+  width: 100%;
+  overflow-x: auto;
+  display: block;
+}
+
+.vp-doc table th {
+  background: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
+}
+
+/* Custom tip/info blocks with brand colours */
+.vp-doc .tip {
+  border-color: var(--forma-blue);
+}
+
+.vp-doc .warning {
+  border-color: var(--forma-yellow);
+}
