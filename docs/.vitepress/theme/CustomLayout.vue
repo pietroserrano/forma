@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import DefaultTheme from 'vitepress/theme'
+import { withBase } from 'vitepress'
 const { Layout } = DefaultTheme
 </script>
 
@@ -26,7 +27,7 @@ const { Layout } = DefaultTheme
           <div class="fh-title">
             <span class="fh-title__eyebrow">Behavioral Patterns for .NET</span>
             <img
-              src="/logo-dark.svg"
+              :src="withBase('/logo-dark.svg')"
               alt="Forma"
               class="fh-title__logo"
               width="220"
@@ -59,7 +60,7 @@ const { Layout } = DefaultTheme
 
           <!-- ── Action buttons ────────────────────────── -->
           <div class="fh-actions">
-            <a href="/getting-started" class="fh-btn fh-btn--brand">
+            <a :href="withBase('/getting-started')" class="fh-btn fh-btn--brand">
               Get started <span aria-hidden="true">→</span>
             </a>
             <a
