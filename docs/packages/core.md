@@ -217,7 +217,7 @@ var greeting = FindUser(123)
 
 | Package | What it adds |
 |---|---|
-| [Forma.Core.FP](/packages/fp) | Functional programming primitives: `Result<T>` and `Option<T>` |
+| Forma.Core (FP primitives) | [Functional programming primitives docs](/packages/fp): `Result<T>` and `Option<T>` |
 | [Forma.Mediator](/packages/mediator) | `IRequestMediator` implementation + DI registration |
 | [Forma.Decorator](/packages/decorator) | `Decorate<TService, TDecorator>()` extension for DI |
 | [Forma.Chains](/packages/chains) | `IChainInvoker<T>` + chain handler pipeline |
