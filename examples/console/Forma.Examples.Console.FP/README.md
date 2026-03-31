@@ -7,7 +7,7 @@ This example demonstrates the functional programming (FP) primitives provided by
 This console application showcases practical examples of:
 
 ### 1. **Basic Result Pipeline**
-Learn how to chain operations with `Result<TSuccess, TFailure>`, handling success and failure cases.
+Learn how to chain operations with `Result<T>` (where failures are represented by `Error`), handling success and failure cases.
 
 ```csharp
 ParseInt("42")

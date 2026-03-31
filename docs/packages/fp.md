@@ -944,7 +944,7 @@ public async Task<Result<FileContent>> ReadFileAsync(string path)
         return Result<FileContent>.Failure(Error.Generic("Path cannot be empty"));
 
     if (!File.Exists(path))
-        return Result<FileContent>.Failure($"File not found: {path}");
+        return Result<FileContent>.Failure(Error.Generic($"File not found: {path}"));
 
     try
     {
@@ -953,7 +953,7 @@ public async Task<Result<FileContent>> ReadFileAsync(string path)
     }
     catch (Exception ex)
     {
-        return Result<FileContent>.Failure($"Error reading file: {ex.Message}");
+        return Result<FileContent>.Failure(Error.Generic($"Error reading file: {ex.Message}"));
     }
 }
 
@@ -981,7 +981,7 @@ private async Task<Result<JsonConfig>> ParseJsonAsync(string json)
     }
     catch (JsonException ex)
     {
-        return Result<JsonConfig>.Failure($"Invalid JSON: {ex.Message}");
+        return Result<JsonConfig>.Failure(Error.DataFormat("json", "valid JSON", ex.Message));
     }
 }
 ```
@@ -991,7 +991,8 @@ private async Task<Result<JsonConfig>> ParseJsonAsync(string json)
 Composing multiple API calls with error handling:
 
 ```csharp
-public record ApiError(int StatusCode, string Message);
+public record ApiError(int StatusCode, string Message)
+    : Error(Message, $"HTTP_{StatusCode}");
 public record User(int Id, string Name);
 public record UserProfile(User User, List<Post> Posts, List<Comment> Comments);
 
@@ -1138,7 +1139,7 @@ public async Task<Result<BookingConfirmation>> ProcessBookingAsync(
     }
     catch (Exception ex)
     {
-        return Result<BookingConfirmation>.Failure($"Unexpected error: {ex.Message}");
+        return Result<BookingConfirmation>.Failure(Error.Generic($"Unexpected error: {ex.Message}"));
     }
 }
 ```

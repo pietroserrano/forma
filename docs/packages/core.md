@@ -14,7 +14,7 @@ dotnet add package Forma.Core
 
 `Forma.Core` provides the fundamental building blocks used across all Forma packages. It defines the contracts (interfaces) that your application code depends on, keeping your domain logic independent of any concrete implementation.
 
-In addition to core abstractions for request handling, `Forma.Core` includes **functional programming primitives** (`Result<TSuccess, TFailure>` and `Option<T>`) for safe, composable error handling and optional value management.
+In addition to core abstractions for request handling, `Forma.Core` includes **functional programming primitives** (`Result<T>` / `Error` and `Option<T>`) for safe, composable error handling and optional value management.
 
 ## Key Abstractions
 
@@ -160,26 +160,26 @@ public class UserController
 
 `Forma.Core` includes functional programming types in the `Forma.Core.FP` namespace:
 
-### `Result<TSuccess, TFailure>`
+### `Result<T>`
 
 Represents an operation that can either succeed with a value or fail with an error. Enables railway-oriented programming with explicit error handling.
 
 ```csharp
 using Forma.Core.FP;
 
-public Result<int, string> Divide(int a, int b)
+public Result<int> Divide(int a, int b)
 {
     if (b == 0)
-        return Result<int, string>.Failure("Division by zero");
-    return Result<int, string>.Success(a / b);
+        return Result<int>.Failure(Error.BusinessRule("DivideByZero", "Division by zero"));
+    return Result<int>.Success(a / b);
 }
 
 // Chain operations
 var result = Divide(10, 2)
-    .Then(x => Result<int, string>.Success(x * 2))
+    .Then(x => Result<int>.Success(x * 2))
     .Match(
         onSuccess: x => $"Result: {x}",
-        onFailure: e => $"Error: {e}"
+        onFailure: e => $"Error: {e.Message}"
     );
 ```
 
