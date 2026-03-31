@@ -1061,4 +1061,4 @@ var product = await cachedRepo
 ## Learn More
 
 - [Console App Example](/guides/console-app) — using FP primitives in console apps
-- [Forma.Examples.Console.FP](https://github.com/your-repo/examples/console/Forma.Examples.Console.FP) — full working example
+- [Forma.Examples.Console.FP](/examples/console/Forma.Examples.Console.FP) — full working example

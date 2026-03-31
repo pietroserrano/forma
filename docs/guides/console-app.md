@@ -337,10 +337,10 @@ using Forma.Core.FP;
 // ── Result: Railway-Oriented Programming ────────────────────────────────────
 
 // Simple success/failure pipeline
-var result = Result<int>.Success(10)
-    .Then(x => x * 2)
-    .Then(x => x > 15 ? Result<int>.Success(x) : Result<int>.Failure("Too small"))
-    .Then(x => x + 5)
+var result = Result<int, string>.Success(10)
+    .Then(x => Result<int, string>.Success(x * 2))
+    .Then(x => x > 15 ? Result<int, string>.Success(x) : Result<int, string>.Failure("Too small"))
+    .Then(x => Result<int, string>.Success(x + 5))
     .Match(
         onSuccess: value => $"Final value: {value}",
         onFailure: error => $"Error: {error}");
@@ -353,10 +353,10 @@ Console.WriteLine(result);
 var config = new Dictionary<string, string> { ["Theme"] = "Dark" };
 
 var theme = Option<string>.From(config.TryGetValue("Theme", out var t) ? t : null)
-    .Then(t => t.ToUpper())
+    .Then(t => Option<string>.Some(t.ToUpper()))
     .Match(
-        onSome: value => $"Using theme: {value}",
-        onNone: () => "Using default theme");
+        some: value => $"Using theme: {value}",
+        none: () => "Using default theme");
 
 Console.WriteLine(theme);
 // Output: Using theme: DARK
@@ -378,7 +378,7 @@ public class UserRegistrationService
         return ValidateUsername(request.Username)
             .Then(_ => ValidateEmail(request.Email))
             .Then(_ => ValidateAge(request.Age))
-            .Then(_ => new User(request.Username, request.Email, request.Age));
+            .Then(_ => Result<User>.Success(new User(request.Username, request.Email, request.Age)));
     }
 
     private Result<string> ValidateUsername(string username)
