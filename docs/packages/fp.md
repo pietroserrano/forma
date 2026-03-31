@@ -1,6 +1,6 @@
 # Forma.Core.FP
 
-**Forma.Core.FP** provides functional programming primitives for safe, composable error handling and optional values. Available as part of the `Forma.Core` package, it introduces `Result<TSuccess, TFailure>` and `Option<T>` types for railway-oriented programming.
+**Forma.Core.FP** provides functional programming primitives for safe, composable error handling and optional values. Available as part of the `Forma.Core` package, it introduces `Result<T>` and `Option<T>` types for railway-oriented programming.
 
 [![NuGet](https://img.shields.io/nuget/v/Forma.Core.svg?label=Forma.Core)](https://www.nuget.org/packages/Forma.Core/)
 
@@ -16,7 +16,7 @@ dotnet add package Forma.Core
 
 FP primitives allow you to model operations that may fail or return no value without using exceptions or null checks:
 
-- **`Result<TSuccess, TFailure>`** — represents an operation that either succeeds with a value or fails with an error
+- **`Result<T>`** — represents an operation that either succeeds with a value or fails with an error
 - **`Error`** — immutable error types for functional error handling (no exceptions!)
 - **`Option<T>`** — represents a value that may or may not exist (a safer alternative to nullable types)
 
@@ -24,7 +24,7 @@ Both `Result` and `Option` support **fluent chaining** via `Then`, `Do`, `Valida
 
 ## Table of Contents
 
-- [Result<TSuccess, TFailure>](#resulttsuccesstfailure)
+- [`Result<T>`](#resultt)
   - [Creating Results](#creating-results)
   - [Transforming, Validating, Pattern Matching](#transforming-with-then)
   - [Async Extensions](#async-extensions)
@@ -33,7 +33,7 @@ Both `Result` and `Option` support **fluent chaining** via `Then`, `Do`, `Valida
   - [Built-in Error Types](#built-in-error-types)
   - [When to Use Each Error Type](#when-to-use-each-error-type) 🎯
   - [Try Pattern for Exception Boundaries](#try-pattern-for-exception-boundaries)
-- [Option<T>](#optiont)
+- [`Option<T>`](#optiont)
   - [Creating Options](#creating-options)
   - [Transforming and Matching](#transforming-with-then-1)
 - [Real-World Examples](#real-world-examples)
@@ -41,9 +41,9 @@ Both `Result` and `Option` support **fluent chaining** via `Then`, `Do`, `Valida
 - [Best Practices](#best-practices) 📖
 - [API Reference](#api-reference)
 
-## Result<TSuccess, TFailure>
+## `Result<T>`
 
-`Result<TSuccess, TFailure>` models operations that can succeed or fail with explicit error types.
+`Result<T>` models operations that can succeed or fail with explicit error types.
 
 ### Creating Results
 
@@ -51,10 +51,10 @@ Both `Result` and `Option` support **fluent chaining** via `Then`, `Do`, `Valida
 using Forma.Core.FP;
 
 // Success
-var success = Result<int, string>.Success(42);
+var success = Result<int>.Success(42);
 
 // Failure
-var failure = Result<int, string>.Failure("Something went wrong");
+var failure = Result<int>.Failure(Error.Generic("Something went wrong"));
 ```
 
 ### Checking Status
@@ -66,7 +66,7 @@ if (result.IsSuccess)
 }
 else
 {
-    Console.WriteLine($"Error: {result.Error}");
+    Console.WriteLine($"Error: {result.Error.Message}");
 }
 ```
 
@@ -76,8 +76,8 @@ Chain operations that depend on the previous success:
 
 ```csharp
 var pipeline = ParseInt("42")
-    .Then(x => Result<int, string>.Success(x * 2))
-    .Then(x => Result<string, string>.Success($"Result: {x}"));
+    .Then(x => Result<int>.Success(x * 2))
+    .Then(x => Result<string>.Success($"Result: {x}"));
 
 // If ParseInt fails, subsequent steps are skipped
 ```
@@ -87,7 +87,7 @@ var pipeline = ParseInt("42")
 Execute actions without transforming the result:
 
 ```csharp
-var result = Result<int, string>.Success(42)
+var result = Result<int>.Success(42)
     .Do(x => Console.WriteLine($"Processing: {x}"));
 ```
 
@@ -96,7 +96,7 @@ var result = Result<int, string>.Success(42)
 Ensure the value meets certain conditions:
 
 ```csharp
-var validated = Result<int, string>.Success(10)
+var validated = Result<int>.Success(10)
     .Validate(x => x > 5, () => "Value must be greater than 5");
 ```
 
@@ -136,7 +136,7 @@ var pipeline = await FetchDataAsync()
 
 ## Error Types
 
-**Forma.Core.FP** provides a hierarchy of immutable error types as a functional alternative to exceptions. Instead of throwing exceptions, return a `Result<TSuccess, Error>` that explicitly models success or failure.
+**Forma.Core.FP** provides a hierarchy of immutable error types as a functional alternative to exceptions. Instead of throwing exceptions, return a `Result<T>` that explicitly models success or failure.
 
 ### Why Error Types?
 
@@ -549,7 +549,7 @@ Error.Aggregate(errors, "Registration failed")
 ```csharp
 using Forma.Core.FP;
 
-public Result<User, Error> CreateUser(CreateUserDto dto)
+public Result<User> CreateUser(CreateUserDto dto)
 {
     // Validation
     var errors = new Dictionary<string, string[]>();
@@ -561,17 +561,17 @@ public Result<User, Error> CreateUser(CreateUserDto dto)
         errors["Age"] = ["Must be 18 or older"];
     
     if (errors.Any())
-        return Result<User, Error>.Failure(
+        return Result<User>.Failure(
             Error.Validation(errors, "Invalid user data"));
     
     // Check for duplicates
     if (_repository.EmailExists(dto.Email))
-        return Result<User, Error>.Failure(
+        return Result<User>.Failure(
             Error.Conflict("Email already in use", dto.Email));
     
     // Success
     var user = new User(dto.Email, dto.Age);
-    return Result<User, Error>.Success(user);
+    return Result<User>.Success(user);
 }
 
 // Usage
@@ -614,15 +614,15 @@ var result = await ResultExtensions.TryAsync(
 Use `ValidateAll` to collect all validation errors instead of short-circuiting:
 
 ```csharp
-var result = Result<User, Error>.Success(user)
+var result = Result<User>.Success(user)
     .ValidateAll(
         u => u.Age >= 18 
-            ? Result<User, ValidationError>.Success(u)
-            : Result<User, ValidationError>.Failure(
+            ? Result<User>.Success(u)
+            : Result<User>.Failure(
                 Error.Validation("Age", "Must be 18+")),
         u => !string.IsNullOrEmpty(u.Email)
-            ? Result<User, ValidationError>.Success(u) 
-            : Result<User, ValidationError>.Failure(
+            ? Result<User>.Success(u) 
+            : Result<User>.Failure(
                 Error.Validation("Email", "Required"))
     );
 // If both fail, result contains both errors combined
@@ -672,7 +672,7 @@ var pipeline = await FetchDataAsync()
     .DoAsync(result => LogAsync(result));
 ```
 
-## Option<T>
+## `Option<T>`
 
 `Option<T>` represents a value that may or may not exist — a safer alternative to nullable types or sentinel values.
 
@@ -776,7 +776,7 @@ var message = option.Match(
 ```csharp
 using Forma.Core.FP;
 
-public Result<Order, Error> CreateOrder(string customerIdStr, string amountStr)
+public Result<Order> CreateOrder(string customerIdStr, string amountStr)
 {
     return ParseInt(customerIdStr)
         .Then(customerId => ParseDecimal(amountStr)
@@ -786,32 +786,32 @@ public Result<Order, Error> CreateOrder(string customerIdStr, string amountStr)
         );
 }
 
-private Result<int, Error> ParseInt(string s) =>
+private Result<int> ParseInt(string s) =>
     int.TryParse(s, out var val)
-        ? Result<int, Error>.Success(val)
-        : Result<int, Error>.Failure(
+        ? Result<int>.Success(val)
+        : Result<int>.Failure(
             Error.DataFormat("CustomerId", "integer", s));
 
-private Result<decimal, Error> ParseDecimal(string s) =>
+private Result<decimal> ParseDecimal(string s) =>
     decimal.TryParse(s, out var val)
-        ? Result<decimal, Error>.Success(val)
-        : Result<decimal, Error>.Failure(
+        ? Result<decimal>.Success(val)
+        : Result<decimal>.Failure(
             Error.DataFormat("Amount", "decimal", s));
 
-private Result<decimal, Error> ValidateAmount(decimal amount) =>
+private Result<decimal> ValidateAmount(decimal amount) =>
     amount > 0
-        ? Result<decimal, Error>.Success(amount)
-        : Result<decimal, Error>.Failure(
+        ? Result<decimal>.Success(amount)
+        : Result<decimal>.Failure(
             Error.BusinessRule("PositiveAmount", "Amount must be positive"));
 
-private Result<Order, Error> CreateOrderEntity(int customerId, decimal amount)
+private Result<Order> CreateOrderEntity(int customerId, decimal amount)
 {
     var customer = _repository.GetCustomer(customerId);
     if (customer is null)
-        return Result<Order, Error>.Failure(
+        return Result<Order>.Failure(
             Error.NotFound<Customer>(customerId));
     
-    return Result<Order, Error>.Success(new Order(customerId, amount));
+    return Result<Order>.Success(new Order(customerId, amount));
 }
 ```
 
@@ -840,39 +840,39 @@ public string GetCustomerGreeting(int id)
 ```csharp
 using Forma.Core.FP;
 
-public async Task<Result<User, Error>> GetActiveUserAsync(int userId)
+public async Task<Result<User>> GetActiveUserAsync(int userId)
 {
     return await FetchUserAsync(userId)
         .ThenAsync(async user =>
         {
             var isActive = await CheckIsActiveAsync(user);
             return isActive
-                ? Result<User, Error>.Success(user)
-                : Result<User, Error>.Failure(
+                ? Result<User>.Success(user)
+                : Result<User>.Failure(
                     Error.BusinessRule("ActiveUser", "User is not active"));
         })
         .DoAsync(user => LogAccessAsync(user));
 }
 
-private async Task<Result<User, Error>> FetchUserAsync(int id)
+private async Task<Result<User>> FetchUserAsync(int id)
 {
     var user = await _dbContext.Users.FindAsync(id);
     return user is not null
-        ? Result<User, Error>.Success(user)
-        : Result<User, Error>.Failure(Error.NotFound<User>(id));
+        ? Result<User>.Success(user)
+        : Result<User>.Failure(Error.NotFound<User>(id));
 }
 ```
 
 ### Combining Result and Option
 
 ```csharp
-public Result<string, string> ProcessOptionalField(Order order)
+public Result<string> ProcessOptionalField(Order order)
 {
     return Option<string>.From(order.DiscountCode)
         .Then(code => ValidateDiscountCode(code))
         .Match(
-            some: validCode => Result<string, string>.Success($"Discount: {validCode}"),
-            none: () => Result<string, string>.Success("No discount applied")
+            some: validCode => Result<string>.Success($"Discount: {validCode}"),
+            none: () => Result<string>.Success("No discount applied")
         );
 }
 
@@ -894,7 +894,7 @@ Complex validation with accumulation of errors:
 public record ValidationError(string Field, string Message);
 public record UserRegistration(string Username, string Email, string Password);
 
-public Result<UserRegistration, List<ValidationError>> ValidateRegistration(
+public Result<UserRegistration> ValidateRegistration(
     string username, string email, string password)
 {
     var errors = new List<ValidationError>();
@@ -918,8 +918,8 @@ public Result<UserRegistration, List<ValidationError>> ValidateRegistration(
         errors.Add(new ValidationError("Password", "Password must be at least 8 characters"));
 
     return errors.Any()
-        ? Result<UserRegistration, List<ValidationError>>.Failure(errors)
-        : Result<UserRegistration, List<ValidationError>>.Success(
+        ? Result<UserRegistration>.Failure(errors)
+        : Result<UserRegistration>.Success(
             new UserRegistration(username, email, password));
 }
 
@@ -938,26 +938,26 @@ Safe file I/O without exceptions:
 ```csharp
 public record FileContent(string Path, string Content);
 
-public async Task<Result<FileContent, string>> ReadFileAsync(string path)
+public async Task<Result<FileContent>> ReadFileAsync(string path)
 {
     if (string.IsNullOrWhiteSpace(path))
-        return Result<FileContent, string>.Failure("Path cannot be empty");
+        return Result<FileContent>.Failure(Error.Generic("Path cannot be empty"));
 
     if (!File.Exists(path))
-        return Result<FileContent, string>.Failure($"File not found: {path}");
+        return Result<FileContent>.Failure($"File not found: {path}");
 
     try
     {
         var content = await File.ReadAllTextAsync(path);
-        return Result<FileContent, string>.Success(new FileContent(path, content));
+        return Result<FileContent>.Success(new FileContent(path, content));
     }
     catch (Exception ex)
     {
-        return Result<FileContent, string>.Failure($"Error reading file: {ex.Message}");
+        return Result<FileContent>.Failure($"Error reading file: {ex.Message}");
     }
 }
 
-public async Task<Result<string, string>> ProcessConfigFileAsync(string configPath)
+public async Task<Result<string>> ProcessConfigFileAsync(string configPath)
 {
     var result = await ReadFileAsync(configPath)
         .ThenAsync(file => ParseJsonAsync(file.Content))
@@ -970,18 +970,18 @@ public async Task<Result<string, string>> ProcessConfigFileAsync(string configPa
     );
 }
 
-private async Task<Result<JsonConfig, string>> ParseJsonAsync(string json)
+private async Task<Result<JsonConfig>> ParseJsonAsync(string json)
 {
     try
     {
         var config = JsonSerializer.Deserialize<JsonConfig>(json);
         return config != null
-            ? Result<JsonConfig, string>.Success(config)
-            : Result<JsonConfig, string>.Failure("JSON deserialization returned null");
+            ? Result<JsonConfig>.Success(config)
+            : Result<JsonConfig>.Failure(Error.Generic("JSON deserialization returned null"));
     }
     catch (JsonException ex)
     {
-        return Result<JsonConfig, string>.Failure($"Invalid JSON: {ex.Message}");
+        return Result<JsonConfig>.Failure($"Invalid JSON: {ex.Message}");
     }
 }
 ```
@@ -995,39 +995,39 @@ public record ApiError(int StatusCode, string Message);
 public record User(int Id, string Name);
 public record UserProfile(User User, List<Post> Posts, List<Comment> Comments);
 
-public async Task<Result<UserProfile, ApiError>> GetUserProfileAsync(int userId)
+public async Task<Result<UserProfile>> GetUserProfileAsync(int userId)
 {
     return await FetchUserAsync(userId)
         .ThenAsync(async user => 
         {
             var posts = await FetchUserPostsAsync(user.Id);
             return posts.IsSuccess
-                ? Result<(User, List<Post>), ApiError>.Success((user, posts.Value!))
-                : Result<(User, List<Post>), ApiError>.Failure(posts.Error!);
+                ? Result<(User, List<Post>)>.Success((user, posts.Value!))
+                : Result<(User, List<Post>)>.Failure(posts.Error!);
         })
         .ThenAsync(async tuple =>
         {
             var (user, posts) = tuple;
             var comments = await FetchUserCommentsAsync(user.Id);
             return comments.IsSuccess
-                ? Result<UserProfile, ApiError>.Success(new UserProfile(user, posts, comments.Value!))
-                : Result<UserProfile, ApiError>.Failure(comments.Error!);
+                ? Result<UserProfile>.Success(new UserProfile(user, posts, comments.Value!))
+                : Result<UserProfile>.Failure(comments.Error!);
         })
         .DoAsync(profile => CacheProfileAsync(profile));
 }
 
-private async Task<Result<User, ApiError>> FetchUserAsync(int userId)
+private async Task<Result<User>> FetchUserAsync(int userId)
 {
     var response = await _httpClient.GetAsync($"/api/users/{userId}");
     
     if (!response.IsSuccessStatusCode)
-        return Result<User, ApiError>.Failure(
+        return Result<User>.Failure(
             new ApiError((int)response.StatusCode, "Failed to fetch user"));
 
     var user = await response.Content.ReadFromJsonAsync<User>();
     return user != null
-        ? Result<User, ApiError>.Success(user)
-        : Result<User, ApiError>.Failure(new ApiError(500, "User deserialization failed"));
+        ? Result<User>.Success(user)
+        : Result<User>.Failure(new ApiError(500, "User deserialization failed"));
 }
 ```
 
@@ -1042,18 +1042,18 @@ public record Email
 
     private Email(string value) => Value = value;
 
-    public static Result<Email, string> Create(string email)
+    public static Result<Email> Create(string email)
     {
         if (string.IsNullOrWhiteSpace(email))
-            return Result<Email, string>.Failure("Email cannot be empty");
+            return Result<Email>.Failure(Error.Generic("Email cannot be empty"));
 
         if (!email.Contains("@"))
-            return Result<Email, string>.Failure("Email must contain @");
+            return Result<Email>.Failure(Error.Generic("Email must contain @"));
 
         if (!email.Contains("."))
-            return Result<Email, string>.Failure("Email must contain a domain");
+            return Result<Email>.Failure(Error.Generic("Email must contain a domain"));
 
-        return Result<Email, string>.Success(new Email(email));
+        return Result<Email>.Success(new Email(email));
     }
 }
 
@@ -1068,27 +1068,27 @@ public record Money
         Currency = currency;
     }
 
-    public static Result<Money, string> Create(decimal amount, string currency)
+    public static Result<Money> Create(decimal amount, string currency)
     {
         if (amount < 0)
-            return Result<Money, string>.Failure("Amount cannot be negative");
+            return Result<Money>.Failure(Error.Generic("Amount cannot be negative"));
 
         if (string.IsNullOrWhiteSpace(currency))
-            return Result<Money, string>.Failure("Currency is required");
+            return Result<Money>.Failure(Error.Generic("Currency is required"));
 
         if (currency.Length != 3)
-            return Result<Money, string>.Failure("Currency must be 3 characters (e.g., USD, EUR)");
+            return Result<Money>.Failure(Error.Generic("Currency must be 3 characters (e.g., USD, EUR)"));
 
-        return Result<Money, string>.Success(new Money(amount, currency));
+        return Result<Money>.Success(new Money(amount, currency));
     }
 }
 
 // Usage in domain service
-public Result<Order, string> CreateOrder(string emailStr, decimal amount, string currency)
+public Result<Order> CreateOrder(string emailStr, decimal amount, string currency)
 {
     return Email.Create(emailStr)
         .Then(email => Money.Create(amount, currency)
-            .Then(money => Result<Order, string>.Success(new Order(email, money)))
+            .Then(money => Result<Order>.Success(new Order(email, money)))
         );
 }
 ```
@@ -1102,7 +1102,7 @@ public record ReservationResult(string ReservationId);
 public record PaymentResult(string TransactionId);
 public record NotificationResult(string MessageId);
 
-public async Task<Result<BookingConfirmation, string>> ProcessBookingAsync(
+public async Task<Result<BookingConfirmation>> ProcessBookingAsync(
     BookingRequest request)
 {
     string? reservationId = null;
@@ -1138,7 +1138,7 @@ public async Task<Result<BookingConfirmation, string>> ProcessBookingAsync(
     }
     catch (Exception ex)
     {
-        return Result<BookingConfirmation, string>.Failure($"Unexpected error: {ex.Message}");
+        return Result<BookingConfirmation>.Failure($"Unexpected error: {ex.Message}");
     }
 }
 ```
@@ -1177,7 +1177,7 @@ public record ValidationSummary(
     List<string> Warnings,
     bool IsValid);
 
-public async Task<Result<ValidationSummary, string>> ValidateDataAsync(DataInput input)
+public async Task<Result<ValidationSummary>> ValidateDataAsync(DataInput input)
 {
     // Run validations in parallel
     var tasks = new[]
@@ -1204,8 +1204,8 @@ public async Task<Result<ValidationSummary, string>> ValidateDataAsync(DataInput
     var summary = new ValidationSummary(errors, warnings, isValid);
 
     return isValid
-        ? Result<ValidationSummary, string>.Success(summary)
-        : Result<ValidationSummary, string>.Failure(
+        ? Result<ValidationSummary>.Success(summary)
+        : Result<ValidationSummary>.Failure(
             $"Validation failed with {errors.Count} error(s)");
 }
 ```
@@ -1273,12 +1273,12 @@ Always prefer specific error types over `GenericError`:
 
 ```csharp
 // ❌ Too generic
-return Result<User, Error>.Failure(
+return Result<User>.Failure(
     Error.Generic("User not found")
 );
 
 // ✅ Specific and searchable
-return Result<User, Error>.Failure(
+return Result<User>.Failure(
     Error.NotFound<User>(userId)
 );
 ```
@@ -1336,7 +1336,7 @@ if (!isValidEmail) errors.Add(Error.Validation("Email", "Invalid"));
 if (!isValidPhone) errors.Add(Error.Validation("Phone", "Invalid"));
 
 if (errors.Any())
-    return Result<User, Error>.Failure(
+    return Result<User>.Failure(
         Error.Aggregate(errors, "Validation failed")
     );
 ```
@@ -1347,7 +1347,7 @@ if (errors.Any())
 // ❌ Mixing styles
 try
 {
-    return Result<Data, Error>.Success(Process());
+    return Result<Data>.Success(Process());
 }
 catch (Exception ex)
 {
@@ -1401,7 +1401,7 @@ Error.BusinessRule("MaxDailyWithdrawal", "Withdrawal exceeds $500 daily limit")
 /// - NotFoundError.Customer: Customer not found
 /// - ConflictError: Order ID already exists
 /// </returns>
-public Result<Order, Error> CreateOrder(OrderDto dto)
+public Result<Order> CreateOrder(OrderDto dto)
 {
     // Implementation
 }
@@ -1509,7 +1509,7 @@ Error.ExternalService("PaymentGateway", reason)
 
 ## API Reference
 
-### Result<TSuccess, TFailure>
+### `Result<T>`
 
 | Method | Description |
 |--------|-------------|
@@ -1531,7 +1531,7 @@ Error.ExternalService("PaymentGateway", reason)
 | `ValidateAsync(predicate, errorFactory)` | Async validation |
 | `MatchAsync<T>(onSuccess, onFailure)` | Async pattern matching |
 
-### Option<T>
+### `Option<T>`
 
 | Method | Description |
 |--------|-------------|

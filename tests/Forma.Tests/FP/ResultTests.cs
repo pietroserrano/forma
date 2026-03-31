@@ -10,7 +10,7 @@ public class ResultTests
     public void Success_CreatesSuccessResult()
     {
         // Arrange & Act
-        var result = Result<int, string>.Success(42);
+        var result = Result<int>.Success(42);
 
         // Assert
         Assert.True(result.IsSuccess);
@@ -22,11 +22,11 @@ public class ResultTests
     public void Failure_CreatesFailureResult()
     {
         // Arrange & Act
-        var result = Result<int, string>.Failure("Error occurred");
+        var result = Result<int>.Failure(Error.Generic("Error occurred"));
 
         // Assert
         Assert.False(result.IsSuccess);
-        Assert.Equal("Error occurred", result.Error);
+        Assert.Equal("Error occurred", result.Error.Message);
     }
 
     #endregion
@@ -37,10 +37,10 @@ public class ResultTests
     public void Then_OnSuccess_TransformsValue()
     {
         // Arrange
-        var result = Result<int, string>.Success(5);
+        var result = Result<int>.Success(5);
 
         // Act
-        var transformed = result.Then(x => Result<int, string>.Success(x * 2));
+        var transformed = result.Then(x => Result<int>.Success(x * 2));
 
         // Assert
         Assert.True(transformed.IsSuccess);
@@ -51,26 +51,26 @@ public class ResultTests
     public void Then_OnFailure_PropagatesError()
     {
         // Arrange
-        var result = Result<int, string>.Failure("Initial error");
+        var result = Result<int>.Failure(Error.Generic("Initial error"));
 
         // Act
-        var transformed = result.Then(x => Result<int, string>.Success(x * 2));
+        var transformed = result.Then(x => Result<int>.Success(x * 2));
 
         // Assert
         Assert.False(transformed.IsSuccess);
-        Assert.Equal("Initial error", transformed.Error);
+        Assert.Equal("Initial error", transformed.Error.Message);
     }
 
     [Fact]
     public void Then_CanChainMultipleOperations()
     {
         // Arrange
-        var result = Result<int, string>.Success(5);
+        var result = Result<int>.Success(5);
 
         // Act
         var transformed = result
-            .Then(x => Result<int, string>.Success(x * 2))
-            .Then(x => Result<string, string>.Success($"Value: {x}"));
+            .Then(x => Result<int>.Success(x * 2))
+            .Then(x => Result<string>.Success($"Value: {x}"));
 
         // Assert
         Assert.True(transformed.IsSuccess);
@@ -85,7 +85,7 @@ public class ResultTests
     public void Do_OnSuccess_ExecutesAction()
     {
         // Arrange
-        var result = Result<int, string>.Success(42);
+        var result = Result<int>.Success(42);
         var executed = false;
 
         // Act
@@ -100,7 +100,7 @@ public class ResultTests
     public void Do_OnFailure_DoesNotExecuteAction()
     {
         // Arrange
-        var result = Result<int, string>.Failure("Error");
+        var result = Result<int>.Failure(Error.Generic("Error"));
         var executed = false;
 
         // Act
@@ -119,10 +119,10 @@ public class ResultTests
     public void Validate_OnSuccess_WithValidPredicate_ReturnsOriginalResult()
     {
         // Arrange
-        var result = Result<int, string>.Success(10);
+        var result = Result<int>.Success(10);
 
         // Act
-        var validated = result.Validate(x => x > 5, () => "Value too small");
+        var validated = result.Validate(x => x > 5, () => Error.Generic("Value too small"));
 
         // Assert
         Assert.True(validated.IsSuccess);
@@ -133,28 +133,28 @@ public class ResultTests
     public void Validate_OnSuccess_WithInvalidPredicate_ReturnsFailure()
     {
         // Arrange
-        var result = Result<int, string>.Success(3);
+        var result = Result<int>.Success(3);
 
         // Act
-        var validated = result.Validate(x => x > 5, () => "Value too small");
+        var validated = result.Validate(x => x > 5, () => Error.Generic("Value too small"));
 
         // Assert
         Assert.False(validated.IsSuccess);
-        Assert.Equal("Value too small", validated.Error);
+        Assert.Equal("Value too small", validated.Error.Message);
     }
 
     [Fact]
     public void Validate_OnFailure_ReturnsOriginalFailure()
     {
         // Arrange
-        var result = Result<int, string>.Failure("Original error");
+        var result = Result<int>.Failure(Error.Generic("Original error"));
 
         // Act
-        var validated = result.Validate(x => x > 5, () => "Value too small");
+        var validated = result.Validate(x => x > 5, () => Error.Generic("Value too small"));
 
         // Assert
         Assert.False(validated.IsSuccess);
-        Assert.Equal("Original error", validated.Error);
+        Assert.Equal("Original error", validated.Error.Message);
     }
 
     #endregion
@@ -165,12 +165,12 @@ public class ResultTests
     public void Match_OnSuccess_ExecutesSuccessFunction()
     {
         // Arrange
-        var result = Result<int, string>.Success(42);
+        var result = Result<int>.Success(42);
 
         // Act
         var matched = result.Match(
             onSuccess: x => $"Success: {x}",
-            onFailure: e => $"Failure: {e}"
+            onFailure: e => $"Failure: {e.Message}"
         );
 
         // Assert
@@ -181,12 +181,12 @@ public class ResultTests
     public void Match_OnFailure_ExecutesFailureFunction()
     {
         // Arrange
-        var result = Result<int, string>.Failure("Error occurred");
+        var result = Result<int>.Failure(Error.Generic("Error occurred"));
 
         // Act
         var matched = result.Match(
             onSuccess: x => $"Success: {x}",
-            onFailure: e => $"Failure: {e}"
+            onFailure: e => $"Failure: {e.Message}"
         );
 
         // Assert
@@ -201,7 +201,7 @@ public class ResultTests
     public void OnSuccess_OnSuccess_ExecutesAction()
     {
         // Arrange
-        var result = Result<int, string>.Success(42);
+        var result = Result<int>.Success(42);
         var executedWithValue = 0;
 
         // Act
@@ -216,7 +216,7 @@ public class ResultTests
     public void OnSuccess_OnFailure_DoesNotExecuteAction()
     {
         // Arrange
-        var result = Result<int, string>.Failure("Error");
+        var result = Result<int>.Failure(Error.Generic("Error"));
         var executed = false;
 
         // Act
@@ -231,11 +231,11 @@ public class ResultTests
     public void OnError_OnFailure_ExecutesAction()
     {
         // Arrange
-        var result = Result<int, string>.Failure("Error occurred");
+        var result = Result<int>.Failure(Error.Generic("Error occurred"));
         var executedError = "";
 
         // Act
-        var returned = result.OnError(e => executedError = e);
+        var returned = result.OnError(e => executedError = e.Message);
 
         // Assert
         Assert.Equal("Error occurred", executedError);
@@ -246,7 +246,7 @@ public class ResultTests
     public void OnError_OnSuccess_DoesNotExecuteAction()
     {
         // Arrange
-        var result = Result<int, string>.Success(42);
+        var result = Result<int>.Success(42);
         var executed = false;
 
         // Act
@@ -269,8 +269,8 @@ public class ResultTests
 
         // Act
         var pipeline = parseResult
-            .Then(x => Result<int, string>.Success(x * 2))
-            .Then(x => Result<string, string>.Success($"Result: {x}"))
+            .Then(x => Result<int>.Success(x * 2))
+            .Then(x => Result<string>.Success($"Result: {x}"))
             .Do(s => Console.WriteLine(s));
 
         // Assert
@@ -290,40 +290,40 @@ public class ResultTests
             .Then(x =>
             {
                 step2Called = true;
-                return Result<int, string>.Success(x * 2);
+                return Result<int>.Success(x * 2);
             });
 
         // Assert
         Assert.False(pipeline.IsSuccess);
         Assert.False(step2Called);
-        Assert.Equal("Invalid number format", pipeline.Error);
+        Assert.Equal("Invalid number format", pipeline.Error.Message);
     }
 
     [Fact]
     public void ComplexPipeline_WithValidation_FailsOnInvalidData()
     {
         // Arrange
-        var result = Result<int, string>.Success(3);
+        var result = Result<int>.Success(3);
 
         // Act
         var pipeline = result
-            .Validate(x => x > 5, () => "Number must be greater than 5")
-            .Then(x => Result<string, string>.Success($"Valid: {x}"));
+            .Validate(x => x > 5, () => Error.Generic("Number must be greater than 5"))
+            .Then(x => Result<string>.Success($"Valid: {x}"));
 
         // Assert
         Assert.False(pipeline.IsSuccess);
-        Assert.Equal("Number must be greater than 5", pipeline.Error);
+        Assert.Equal("Number must be greater than 5", pipeline.Error.Message);
     }
 
     #endregion
 
     #region Helper Methods
 
-    private static Result<int, string> ParseInt(string s)
+    private static Result<int> ParseInt(string s)
     {
         if (int.TryParse(s, out int val))
-            return Result<int, string>.Success(val);
-        return Result<int, string>.Failure("Invalid number format");
+            return Result<int>.Success(val);
+        return Result<int>.Failure(Error.Generic("Invalid number format"));
     }
 
     #endregion

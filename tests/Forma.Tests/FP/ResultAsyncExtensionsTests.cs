@@ -10,13 +10,13 @@ public class ResultAsyncExtensionsTests
     public async Task ThenAsync_OnSuccessTask_TransformsValue()
     {
         // Arrange
-        var resultTask = Task.FromResult(Result<int, string>.Success(5));
+        var resultTask = Task.FromResult(Result<int>.Success(5));
 
         // Act
         var transformed = await resultTask.ThenAsync(async x =>
         {
             await Task.Delay(1);
-            return Result<int, string>.Success(x * 2);
+            return Result<int>.Success(x * 2);
         });
 
         // Assert
@@ -28,37 +28,37 @@ public class ResultAsyncExtensionsTests
     public async Task ThenAsync_OnFailureTask_PropagatesError()
     {
         // Arrange
-        var resultTask = Task.FromResult(Result<int, string>.Failure("Initial error"));
+        var resultTask = Task.FromResult(Result<int>.Failure(Error.Generic("Initial error")));
 
         // Act
         var transformed = await resultTask.ThenAsync(async x =>
         {
             await Task.Delay(1);
-            return Result<int, string>.Success(x * 2);
+            return Result<int>.Success(x * 2);
         });
 
         // Assert
         Assert.False(transformed.IsSuccess);
-        Assert.Equal("Initial error", transformed.Error);
+        Assert.Equal("Initial error", transformed.Error.Message);
     }
 
     [Fact]
     public async Task ThenAsync_OnSuccess_CanChainMultiple()
     {
         // Arrange
-        var resultTask = Task.FromResult(Result<int, string>.Success(5));
+        var resultTask = Task.FromResult(Result<int>.Success(5));
 
         // Act
         var transformed = await resultTask
             .ThenAsync(async x =>
             {
                 await Task.Delay(1);
-                return Result<int, string>.Success(x * 2);
+                return Result<int>.Success(x * 2);
             })
             .ThenAsync(async x =>
             {
                 await Task.Delay(1);
-                return Result<string, string>.Success($"Value: {x}");
+                return Result<string>.Success($"Value: {x}");
             });
 
         // Assert
@@ -70,13 +70,13 @@ public class ResultAsyncExtensionsTests
     public async Task ThenAsync_WithResultInstance_TransformsValue()
     {
         // Arrange
-        var result = Result<int, string>.Success(5);
+        var result = Result<int>.Success(5);
 
         // Act
         var transformed = await result.ThenAsync(async x =>
         {
             await Task.Delay(1);
-            return Result<int, string>.Success(x * 2);
+            return Result<int>.Success(x * 2);
         });
 
         // Assert
@@ -92,7 +92,7 @@ public class ResultAsyncExtensionsTests
     public async Task DoAsync_OnSuccess_ExecutesAction()
     {
         // Arrange
-        var resultTask = Task.FromResult(Result<int, string>.Success(42));
+        var resultTask = Task.FromResult(Result<int>.Success(42));
         var executed = false;
         var executedValue = 0;
 
@@ -115,7 +115,7 @@ public class ResultAsyncExtensionsTests
     public async Task DoAsync_OnFailure_DoesNotExecuteAction()
     {
         // Arrange
-        var resultTask = Task.FromResult(Result<int, string>.Failure("Error"));
+        var resultTask = Task.FromResult(Result<int>.Failure(Error.Generic("Error")));
         var executed = false;
 
         // Act
@@ -128,7 +128,7 @@ public class ResultAsyncExtensionsTests
         // Assert
         Assert.False(executed);
         Assert.False(returned.IsSuccess);
-        Assert.Equal("Error", returned.Error);
+        Assert.Equal("Error", returned.Error.Message);
     }
 
     #endregion
@@ -139,7 +139,7 @@ public class ResultAsyncExtensionsTests
     public async Task ValidateAsync_OnSuccess_WithValidPredicate_ReturnsOriginalResult()
     {
         // Arrange
-        var resultTask = Task.FromResult(Result<int, string>.Success(10));
+        var resultTask = Task.FromResult(Result<int>.Success(10));
 
         // Act
         var validated = await resultTask.ValidateAsync(
@@ -148,7 +148,7 @@ public class ResultAsyncExtensionsTests
                 await Task.Delay(1);
                 return x > 5;
             },
-            () => "Value too small"
+            () => Error.Generic("Value too small")
         );
 
         // Assert
@@ -160,7 +160,7 @@ public class ResultAsyncExtensionsTests
     public async Task ValidateAsync_OnSuccess_WithInvalidPredicate_ReturnsFailure()
     {
         // Arrange
-        var resultTask = Task.FromResult(Result<int, string>.Success(3));
+        var resultTask = Task.FromResult(Result<int>.Success(3));
 
         // Act
         var validated = await resultTask.ValidateAsync(
@@ -169,19 +169,19 @@ public class ResultAsyncExtensionsTests
                 await Task.Delay(1);
                 return x > 5;
             },
-            () => "Value too small"
+            () => Error.Generic("Value too small")
         );
 
         // Assert
         Assert.False(validated.IsSuccess);
-        Assert.Equal("Value too small", validated.Error);
+        Assert.Equal("Value too small", validated.Error.Message);
     }
 
     [Fact]
     public async Task ValidateAsync_OnFailure_ReturnsOriginalFailure()
     {
         // Arrange
-        var resultTask = Task.FromResult(Result<int, string>.Failure("Original error"));
+        var resultTask = Task.FromResult(Result<int>.Failure(Error.Generic("Original error")));
 
         // Act
         var validated = await resultTask.ValidateAsync(
@@ -190,12 +190,12 @@ public class ResultAsyncExtensionsTests
                 await Task.Delay(1);
                 return x > 5;
             },
-            () => "Value too small"
+            () => Error.Generic("Value too small")
         );
 
         // Assert
         Assert.False(validated.IsSuccess);
-        Assert.Equal("Original error", validated.Error);
+        Assert.Equal("Original error", validated.Error.Message);
     }
 
     #endregion
@@ -206,7 +206,7 @@ public class ResultAsyncExtensionsTests
     public async Task MatchAsync_OnSuccess_ExecutesSuccessFunction()
     {
         // Arrange
-        var resultTask = Task.FromResult(Result<int, string>.Success(42));
+        var resultTask = Task.FromResult(Result<int>.Success(42));
 
         // Act
         var matched = await resultTask.MatchAsync(
@@ -230,7 +230,7 @@ public class ResultAsyncExtensionsTests
     public async Task MatchAsync_OnFailure_ExecutesFailureFunction()
     {
         // Arrange
-        var resultTask = Task.FromResult(Result<int, string>.Failure("Error occurred"));
+        var resultTask = Task.FromResult(Result<int>.Failure(Error.Generic("Error occurred")));
 
         // Act
         var matched = await resultTask.MatchAsync(
@@ -242,7 +242,7 @@ public class ResultAsyncExtensionsTests
             onFailure: async e =>
             {
                 await Task.Delay(1);
-                return $"Failure: {e}";
+                return $"Failure: {e.Message}";
             }
         );
 
@@ -265,7 +265,7 @@ public class ResultAsyncExtensionsTests
             .ThenAsync(async x =>
             {
                 await Task.Delay(1);
-                return Result<int, string>.Success(x * 2);
+                return Result<int>.Success(x * 2);
             })
             .DoAsync(async x =>
             {
@@ -278,12 +278,12 @@ public class ResultAsyncExtensionsTests
                     await Task.Delay(1);
                     return x > 50;
                 },
-                () => "Value must be greater than 50"
+                () => Error.Generic("Value must be greater than 50")
             )
             .ThenAsync(async x =>
             {
                 await Task.Delay(1);
-                return Result<string, string>.Success($"Result: {x}");
+                return Result<string>.Success($"Result: {x}");
             });
 
         // Assert
@@ -304,20 +304,20 @@ public class ResultAsyncExtensionsTests
             {
                 await Task.Delay(1);
                 step2Called = true;
-                return Result<int, string>.Success(x * 2);
+                return Result<int>.Success(x * 2);
             });
 
         // Assert
         Assert.False(pipeline.IsSuccess);
         Assert.False(step2Called);
-        Assert.Equal("Invalid number format", pipeline.Error);
+        Assert.Equal("Invalid number format", pipeline.Error.Message);
     }
 
     [Fact]
     public async Task ComplexAsyncPipeline_FailsValidation_ReturnsFailure()
     {
         // Arrange
-        var resultTask = Task.FromResult(Result<int, string>.Success(30));
+        var resultTask = Task.FromResult(Result<int>.Success(30));
 
         // Act
         var pipeline = await resultTask
@@ -327,17 +327,17 @@ public class ResultAsyncExtensionsTests
                     await Task.Delay(1);
                     return x > 50;
                 },
-                () => "Value must be greater than 50"
+                () => Error.Generic("Value must be greater than 50")
             )
             .ThenAsync(async x =>
             {
                 await Task.Delay(1);
-                return Result<string, string>.Success($"Valid: {x}");
+                return Result<string>.Success($"Valid: {x}");
             });
 
         // Assert
         Assert.False(pipeline.IsSuccess);
-        Assert.Equal("Value must be greater than 50", pipeline.Error);
+        Assert.Equal("Value must be greater than 50", pipeline.Error.Message);
     }
 
     [Fact]
@@ -351,7 +351,7 @@ public class ResultAsyncExtensionsTests
             .ThenAsync(async x =>
             {
                 await Task.Delay(1);
-                return Result<int, string>.Success(x * 2);
+                return Result<int>.Success(x * 2);
             })
             .MatchAsync(
                 onSuccess: async x =>
@@ -374,11 +374,11 @@ public class ResultAsyncExtensionsTests
 
     #region Helper Methods
 
-    private static Task<Result<int, string>> ParseIntAsync(string s)
+    private static Task<Result<int>> ParseIntAsync(string s)
     {
         if (int.TryParse(s, out int val))
-            return Task.FromResult(Result<int, string>.Success(val));
-        return Task.FromResult(Result<int, string>.Failure("Invalid number format"));
+            return Task.FromResult(Result<int>.Success(val));
+        return Task.FromResult(Result<int>.Failure(Error.Generic("Invalid number format")));
     }
 
     #endregion
