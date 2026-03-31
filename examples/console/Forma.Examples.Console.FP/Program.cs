@@ -1,49 +1,258 @@
 ﻿using Forma.Core.FP;
 
-var pipeline = Step1("5")
-    .Then(Step2)
-    .Then(Step3)
-    .OnSuccess(result => Console.WriteLine(result))
-    .OnError(error => Console.WriteLine($"Errore: {error.Message}"));
+Console.WriteLine("=== Forma.Core.FP Examples ===\n");
 
+// ============================================
+// Example 1: Basic Result Pipeline
+// ============================================
+Console.WriteLine("1. Basic Result Pipeline");
+Console.WriteLine("   Processing: \"42\"");
 
-var optionPipeline = OptionStep1("s")
-    .Then(OptionStep2)
-    .Then(OptionStep3)
+var successPipeline = ParseInt("42")
+    .Then(MultiplyByTwo)
+    .Then(ConvertToMessage)
+    .OnSuccess(result => Console.WriteLine($"   ✓ Success: {result}"))
+    .OnError(error => Console.WriteLine($"   ✗ Error: {error}"));
+
+Console.WriteLine("   Processing: \"invalid\"");
+var failurePipeline = ParseInt("invalid")
+    .Then(MultiplyByTwo)
+    .Then(ConvertToMessage)
+    .OnSuccess(result => Console.WriteLine($"   ✓ Success: {result}"))
+    .OnError(error => Console.WriteLine($"   ✗ Error: {error}"));
+
+Console.WriteLine();
+
+// ============================================
+// Example 2: Option Pipeline with Validation
+// ============================================
+Console.WriteLine("2. Option Pipeline with Validation");
+Console.WriteLine("   Processing: \"25\"");
+
+var validOption = ParseIntOption("25")
+    .Then(x => Option<int>.Some(x * 2))
+    .Validate(x => x > 10)
+    .Then(x => Option<string>.Some($"Valid value: {x}"))
     .Match(
-        some: result => result,
-        none: () => "Too small"
+        some: result => $"   ✓ {result}",
+        none: () => "   ✗ Value too small or invalid"
     );
+Console.WriteLine(validOption);
 
-Console.WriteLine($"Option Result: {optionPipeline}");
+Console.WriteLine("   Processing: \"3\"");
+var invalidOption = ParseIntOption("3")
+    .Then(x => Option<int>.Some(x * 2))
+    .Validate(x => x > 10)
+    .Then(x => Option<string>.Some($"Valid value: {x}"))
+    .Match(
+        some: result => $"   ✓ {result}",
+        none: () => "   ✗ Value too small or invalid"
+    );
+Console.WriteLine(invalidOption);
 
-// Funzioni che restituiscono Option
-static Option<int> OptionStep1(string s)
+Console.WriteLine();
+
+// ============================================
+// Example 3: Form Validation
+// ============================================
+Console.WriteLine("3. Form Validation");
+
+var validUser = ValidateUser("john_doe", "john@example.com", "password123")
+    .Match(
+        onSuccess: user => $"   ✓ User validated: {user.Username} ({user.Email})",
+        onFailure: errors => $"   ✗ Validation errors:\n{string.Join("\n", errors.Select(e => $"      - {e}"))}"
+    );
+Console.WriteLine(validUser);
+
+var invalidUser = ValidateUser("jo", "invalid", "123")
+    .Match(
+        onSuccess: user => $"   ✓ User validated: {user.Username} ({user.Email})",
+        onFailure: errors => $"   ✗ Validation errors:\n{string.Join("\n", errors.Select(e => $"      - {e}"))}"
+    );
+Console.WriteLine(invalidUser);
+
+Console.WriteLine();
+
+// ============================================
+// Example 4: Chaining Multiple Operations
+// ============================================
+Console.WriteLine("4. Chaining Multiple Operations (Calculator)");
+
+var calculation = Calculate("10", "+", "5")
+    .Match(
+        onSuccess: result => $"   ✓ Result: {result}",
+        onFailure: error => $"   ✗ {error}"
+    );
+Console.WriteLine(calculation);
+
+var invalidCalc = Calculate("10", "/", "0")
+    .Match(
+        onSuccess: result => $"   ✓ Result: {result}",
+        onFailure: error => $"   ✗ {error}"
+    );
+Console.WriteLine(invalidCalc);
+
+Console.WriteLine();
+
+// ============================================
+// Example 5: Option - Safe Dictionary Access
+// ============================================
+Console.WriteLine("5. Safe Dictionary Access");
+
+var settings = new Dictionary<string, string>
 {
-    if (int.TryParse(s, out int val)) return Option<int>.Some(val);
+    ["host"] = "localhost",
+    ["port"] = "8080"
+};
+
+var host = GetSetting(settings, "host")
+    .Match(
+        some: value => $"   ✓ Host: {value}",
+        none: () => "   ✗ Host not configured"
+    );
+Console.WriteLine(host);
+
+var timeout = GetSetting(settings, "timeout")
+    .Match(
+        some: value => $"   ✓ Timeout: {value}",
+        none: () => "   ✗ Timeout not configured (using default)"
+    );
+Console.WriteLine(timeout);
+
+Console.WriteLine();
+
+// ============================================
+// Example 6: Combining Results
+// ============================================
+Console.WriteLine("6. Combining Multiple Results");
+
+var order = CreateOrder("john@example.com", "100.50", "USD")
+    .Match(
+        onSuccess: o => $"   ✓ Order created: {o.CustomerEmail}, {o.Amount} {o.Currency}",
+        onFailure: error => $"   ✗ Order creation failed: {error}"
+    );
+Console.WriteLine(order);
+
+Console.WriteLine("\n=== Examples Completed ===");
+
+// ============================================
+// Helper Functions
+// ============================================
+
+static Result<int, string> ParseInt(string s)
+{
+    if (int.TryParse(s, out int val))
+        return Result<int, string>.Success(val);
+    return Result<int, string>.Failure($"'{s}' is not a valid integer");
+}
+
+static Result<int, string> MultiplyByTwo(int x) => 
+    Result<int, string>.Success(x * 2);
+
+static Result<string, string> ConvertToMessage(int x) => 
+    Result<string, string>.Success($"The result is {x}");
+
+static Option<int> ParseIntOption(string s)
+{
+    if (int.TryParse(s, out int val))
+        return Option<int>.Some(val);
     return Option<int>.None();
 }
 
-static Option<int> OptionStep2(int x) => Option<int>.Some(x * 2);
-
-static Option<string> OptionStep3(int x)
+static Option<string> GetSetting(Dictionary<string, string> settings, string key)
 {
-    if (x > 10) return Option<string>.Some($"OK: {x}");
-    return Option<string>.None();
+    return settings.TryGetValue(key, out var value) 
+        ? Option<string>.Some(value) 
+        : Option<string>.None();
 }
 
+// Form Validation
+record UserInput(string Username, string Email, string Password);
 
-// Funzioni che restituiscono Result
-static Result<int, Exception> Step1(string s)
+static Result<UserInput, List<string>> ValidateUser(string username, string email, string password)
 {
-    if (int.TryParse(s, out int val)) return Result<int, Exception>.Success(val);
-    return Result<int, Exception>.Failure(new FormatException("Not a number"));
+    var errors = new List<string>();
+
+    if (string.IsNullOrWhiteSpace(username) || username.Length < 3)
+        errors.Add("Username must be at least 3 characters");
+
+    if (string.IsNullOrWhiteSpace(email) || !email.Contains("@"))
+        errors.Add("Email must be valid");
+
+    if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
+        errors.Add("Password must be at least 8 characters");
+
+    return errors.Any()
+        ? Result<UserInput, List<string>>.Failure(errors)
+        : Result<UserInput, List<string>>.Success(new UserInput(username, email, password));
 }
 
-static Result<int, Exception> Step2(int x) => Result<int, Exception>.Success(x * 2);
-
-static Result<string, Exception> Step3(int x)
+// Calculator
+static Result<double, string> Calculate(string leftStr, string operation, string rightStr)
 {
-    if (x > 10) return Result<string, Exception>.Success($"OK: {x}");
-    return Result<string, Exception>.Failure(new Exception("Too small"));
+    return ParseDouble(leftStr)
+        .Then(left => ParseDouble(rightStr)
+            .Then(right => PerformOperation(left, right, operation))
+        );
+}
+
+static Result<double, string> ParseDouble(string s)
+{
+    if (double.TryParse(s, out double val))
+        return Result<double, string>.Success(val);
+    return Result<double, string>.Failure($"'{s}' is not a valid number");
+}
+
+static Result<double, string> PerformOperation(double left, double right, string operation)
+{
+    return operation switch
+    {
+        "+" => Result<double, string>.Success(left + right),
+        "-" => Result<double, string>.Success(left - right),
+        "*" => Result<double, string>.Success(left * right),
+        "/" when right != 0 => Result<double, string>.Success(left / right),
+        "/" => Result<double, string>.Failure("Division by zero"),
+        _ => Result<double, string>.Failure($"Unknown operation: {operation}")
+    };
+}
+
+// Order Creation
+record Order(string CustomerEmail, string Amount, string Currency);
+
+static Result<Order, string> CreateOrder(string email, string amount, string currency)
+{
+    return ValidateEmail(email)
+        .Then(_ => ValidateAmount(amount)
+            .Then(validAmount => ValidateCurrency(currency)
+                .Then(validCurrency => 
+                    Result<Order, string>.Success(new Order(email, validAmount, validCurrency)))
+            )
+        );
+}
+
+static Result<string, string> ValidateEmail(string email)
+{
+    if (string.IsNullOrWhiteSpace(email))
+        return Result<string, string>.Failure("Email is required");
+    if (!email.Contains("@"))
+        return Result<string, string>.Failure("Email must be valid");
+    return Result<string, string>.Success(email);
+}
+
+static Result<string, string> ValidateAmount(string amount)
+{
+    if (!decimal.TryParse(amount, out var val))
+        return Result<string, string>.Failure("Amount must be a valid number");
+    if (val <= 0)
+        return Result<string, string>.Failure("Amount must be positive");
+    return Result<string, string>.Success(amount);
+}
+
+static Result<string, string> ValidateCurrency(string currency)
+{
+    if (string.IsNullOrWhiteSpace(currency))
+        return Result<string, string>.Failure("Currency is required");
+    if (currency.Length != 3)
+        return Result<string, string>.Failure("Currency must be 3 characters (e.g., USD, EUR)");
+    return Result<string, string>.Success(currency);
 }

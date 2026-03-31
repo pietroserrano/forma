@@ -14,6 +14,8 @@ dotnet add package Forma.Core
 
 `Forma.Core` provides the fundamental building blocks used across all Forma packages. It defines the contracts (interfaces) that your application code depends on, keeping your domain logic independent of any concrete implementation.
 
+In addition to core abstractions for request handling, `Forma.Core` includes **functional programming primitives** (`Result<TSuccess, TFailure>` and `Option<T>`) for safe, composable error handling and optional value management.
+
 ## Key Abstractions
 
 ### `IRequest`
@@ -154,6 +156,57 @@ public class UserController
 }
 ```
 
+## Functional Programming Primitives
+
+`Forma.Core` includes functional programming types in the `Forma.Core.FP` namespace:
+
+### `Result<TSuccess, TFailure>`
+
+Represents an operation that can either succeed with a value or fail with an error. Enables railway-oriented programming with explicit error handling.
+
+```csharp
+using Forma.Core.FP;
+
+public Result<int, string> Divide(int a, int b)
+{
+    if (b == 0)
+        return Result<int, string>.Failure("Division by zero");
+    return Result<int, string>.Success(a / b);
+}
+
+// Chain operations
+var result = Divide(10, 2)
+    .Then(x => Result<int, string>.Success(x * 2))
+    .Match(
+        onSuccess: x => $"Result: {x}",
+        onFailure: e => $"Error: {e}"
+    );
+```
+
+### `Option<T>`
+
+Represents a value that may or may not exist — a safer alternative to nullable types.
+
+```csharp
+using Forma.Core.FP;
+
+public Option<User> FindUser(int id)
+{
+    var user = _repository.GetById(id);
+    return Option<User>.From(user); // Some if not null, None otherwise
+}
+
+// Chain operations
+var greeting = FindUser(123)
+    .Then(u => Option<string>.Some(u.Name))
+    .Match(
+        some: name => $"Hello, {name}!",
+        none: () => "User not found"
+    );
+```
+
+**For complete documentation**, see [Forma.Core.FP](/packages/fp).
+
 ## Design Philosophy
 
 - **Interface-first** — your application code depends only on abstractions from `Forma.Core`, never on implementation details from `Forma.Mediator`, `Forma.Decorator`, etc.
@@ -164,6 +217,7 @@ public class UserController
 
 | Package | What it adds |
 |---|---|
+| [Forma.Core.FP](/packages/fp) | Functional programming primitives: `Result<T>` and `Option<T>` |
 | [Forma.Mediator](/packages/mediator) | `IRequestMediator` implementation + DI registration |
 | [Forma.Decorator](/packages/decorator) | `Decorate<TService, TDecorator>()` extension for DI |
 | [Forma.Chains](/packages/chains) | `IChainInvoker<T>` + chain handler pipeline |
