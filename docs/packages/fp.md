@@ -110,9 +110,9 @@ For async workflows, use `ThenAsync`, `DoAsync`, `ValidateAsync`, and `MatchAsyn
 using Forma.Core.FP;
 
 var pipeline = await FetchDataAsync()
-    .ThenAsync(async data => await ProcessAsync(data))
-    .ValidateAsync(async result => await IsValidAsync(result), () => "Validation failed")
-    .DoAsync(async result => await LogAsync(result));
+    .ThenAsync(data => ProcessAsync(data))
+    .ValidateAsync(result => IsValidAsync(result), () => "Validation failed")
+    .DoAsync(result => LogAsync(result));
 ```
 
 ## Error Types
@@ -344,7 +344,7 @@ var result = ResultExtensions.Try(
 
 // Asynchronous
 var result = await ResultExtensions.TryAsync(
-    async () => await httpClient.GetAsync(url),
+    () => httpClient.GetAsync(url),
     ex => new ExternalServiceError("API", ex.Message) 
     {
         Timeout = ex is TimeoutException ? TimeSpan.FromSeconds(30) : null
@@ -410,9 +410,9 @@ For async workflows, use `ThenAsync`, `DoAsync`, `ValidateAsync`, and `MatchAsyn
 using Forma.Core.FP;
 
 var pipeline = await FetchDataAsync()
-    .ThenAsync(async data => await ProcessAsync(data))
-    .ValidateAsync(async result => await IsValidAsync(result), () => "Validation failed")
-    .DoAsync(async result => await LogAsync(result));
+    .ThenAsync(data => ProcessAsync(data))
+    .ValidateAsync(result => IsValidAsync(result), () => "Validation failed")
+    .DoAsync(result => LogAsync(result));
 ```
 
 ## Option<T>
@@ -465,7 +465,7 @@ var transformed = ParseIntOption("42")
 
 ```csharp
 var result = await option
-    .ThenAsync(async x => await FetchRelatedDataAsync(x));
+    .ThenAsync(x => FetchRelatedDataAsync(x));
 ```
 
 ### Side Effects with Do
@@ -479,7 +479,7 @@ option
 
 ```csharp
 await option
-    .DoAsync(async x => await LogAsync(x));
+    .DoAsync(x => LogAsync(x));
 ```
 
 ### Validation
@@ -498,7 +498,7 @@ var invalid = Option<int>.Some(3)
 
 ```csharp
 var validated = await option
-    .ValidateAsync(async x => await IsValidAsync(x));
+    .ValidateAsync(x => IsValidAsync(x));
 ```
 
 ### Pattern Matching with Match
@@ -586,12 +586,15 @@ using Forma.Core.FP;
 public async Task<Result<User, Error>> GetActiveUserAsync(int userId)
 {
     return await FetchUserAsync(userId)
-        .ThenAsync(async user => await CheckIsActiveAsync(user)
-            ? Result<User, Error>.Success(user)
-            : Result<User, Error>.Failure(
-                new BusinessRuleViolationError("ActiveUser", "User is not active"))
-        )
-        .DoAsync(async user => await LogAccessAsync(user));
+        .ThenAsync(async user =>
+        {
+            var isActive = await CheckIsActiveAsync(user);
+            return isActive
+                ? Result<User, Error>.Success(user)
+                : Result<User, Error>.Failure(
+                    new BusinessRuleViolationError("ActiveUser", "User is not active"));
+        })
+        .DoAsync(user => LogAccessAsync(user));
 }
 
 private async Task<Result<User, Error>> FetchUserAsync(int id)
@@ -699,14 +702,15 @@ public async Task<Result<FileContent, string>> ReadFileAsync(string path)
 
 public async Task<Result<string, string>> ProcessConfigFileAsync(string configPath)
 {
-    return await ReadFileAsync(configPath)
-        .ThenAsync(async file => await ParseJsonAsync(file.Content))
-        .ThenAsync(async config => await ValidateConfigAsync(config))
-        .ThenAsync(async config => await ApplyConfigAsync(config))
-        .MatchAsync(
-            onSuccess: async _ => "Configuration applied successfully",
-            onFailure: async error => $"Configuration failed: {error}"
-        );
+    var result = await ReadFileAsync(configPath)
+        .ThenAsync(file => ParseJsonAsync(file.Content))
+        .ThenAsync(config => ValidateConfigAsync(config))
+        .ThenAsync(config => ApplyConfigAsync(config));
+    
+    return result.Match(
+        onSuccess: _ => "Configuration applied successfully",
+        onFailure: error => $"Configuration failed: {error}"
+    );
 }
 
 private async Task<Result<JsonConfig, string>> ParseJsonAsync(string json)
@@ -752,7 +756,7 @@ public async Task<Result<UserProfile, ApiError>> GetUserProfileAsync(int userId)
                 ? Result<UserProfile, ApiError>.Success(new UserProfile(user, posts, comments.Value!))
                 : Result<UserProfile, ApiError>.Failure(comments.Error!);
         })
-        .DoAsync(async profile => await CacheProfileAsync(profile));
+        .DoAsync(profile => CacheProfileAsync(profile));
 }
 
 private async Task<Result<User, ApiError>> FetchUserAsync(int userId)
@@ -860,9 +864,9 @@ public async Task<Result<BookingConfirmation, string>> ProcessBookingAsync(
                 transactionId = payment.TransactionId;
                 return await SendConfirmationAsync(request, payment);
             })
-            .ThenAsync(async notification =>
+            .ThenAsync(notification =>
             {
-                return await CreateBookingConfirmationAsync(
+                return CreateBookingConfirmationAsync(
                     reservationId!, transactionId!, notification.MessageId);
             });
 
@@ -996,7 +1000,7 @@ public class CachedRepository<T> where T : class
 
 // Usage
 var product = await cachedRepo
-    .GetOrFetchAsync("product-123", async () => await FetchFromDatabaseAsync("product-123"))
+    .GetOrFetchAsync("product-123", () => FetchFromDatabaseAsync("product-123"))
     .Match(
         some: p => $"Product: {p.Name}",
         none: () => "Product not found"
