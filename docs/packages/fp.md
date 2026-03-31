@@ -287,7 +287,7 @@ public async Task<Result<User, string>> GetActiveUserAsync(int userId)
         .DoAsync(async user => await LogAccessAsync(user));
 }
 
-private Task<Result<User, string>> FetchUserAsync(int id)
+private async Task<Result<User, string>> FetchUserAsync(int id)
 {
     var user = await _dbContext.Users.FindAsync(id);
     return user != null
