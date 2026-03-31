@@ -469,8 +469,8 @@ public static class ProductEndpoints
             var result = service.GetProduct(id);
             
             return result.Match(
-                onSome: product => Results.Ok(product),
-                onNone: () => Results.NotFound(new { error = $"Product {id} not found" })
+                some: product => Results.Ok(product),
+                none: () => Results.NotFound(new { error = $"Product {id} not found" })
             );
         })
         .WithSummary("Get product by ID")
