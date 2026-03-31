@@ -203,6 +203,9 @@ PublishScripts/
 **/[Pp]ackages/*
 # except build/, which is used as an MSBuild target.
 !**/[Pp]ackages/build/
+# Documentation packages directory should not be ignored
+!docs/packages/
+!docs/packages/*
 # Uncomment if necessary however generally it will be regenerated when needed
 #!**/[Pp]ackages/repositories.config
 # NuGet v3's project.json files produces more ignorable files
@@ -424,6 +427,7 @@ TestResults/
 *.nupkg
 *.snupkg
 packages/
+!docs/packages/
 .nuget/
 
 ## Ignore docs and temp
@@ -437,3 +441,7 @@ Thumbs.db
 *.db
 *.db-shm
 *.db-wal
+
+## VitePress documentation build output
+docs/.vitepress/dist/
+docs/.vitepress/cache/

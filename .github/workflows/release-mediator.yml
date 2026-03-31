@@ -9,6 +9,10 @@ on:
         default: false
         type: boolean
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   # Check if Mediator package has changes
   detect-changes:
