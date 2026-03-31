@@ -13,6 +13,7 @@ public class FPBenchmarks
     private Result<int> _failureResult = null!;
     private Option<int> _someOption = null!;
     private Option<int> _noneOption = null!;
+    private int _sideEffectCounter;
 
     [GlobalSetup]
     public void Setup()
@@ -70,15 +71,13 @@ public class FPBenchmarks
     [Benchmark]
     public Result<int> Result_Do_Success()
     {
-        var count = 0;
-        return _successResult.Do(_ => count++);
+        return _successResult.Do(_ => _sideEffectCounter++);
     }
 
     [Benchmark]
     public Result<int> Result_Do_Failure()
     {
-        var count = 0;
-        return _failureResult.Do(_ => count++);
+        return _failureResult.Do(_ => _sideEffectCounter++);
     }
 
     [Benchmark]
@@ -114,15 +113,13 @@ public class FPBenchmarks
     [Benchmark]
     public Result<int> Result_OnSuccess()
     {
-        var count = 0;
-        return _successResult.OnSuccess(_ => count++);
+        return _successResult.OnSuccess(_ => _sideEffectCounter++);
     }
 
     [Benchmark]
     public Result<int> Result_OnError()
     {
-        var count = 0;
-        return _failureResult.OnError(_ => count++);
+        return _failureResult.OnError(_ => _sideEffectCounter++);
     }
 
     [Benchmark]
@@ -212,15 +209,13 @@ public class FPBenchmarks
     [Benchmark]
     public Option<int> Option_Do_Some()
     {
-        var count = 0;
-        return _someOption.Do(_ => count++);
+        return _someOption.Do(_ => _sideEffectCounter++);
     }
 
     [Benchmark]
     public Option<int> Option_Do_None()
     {
-        var count = 0;
-        return _noneOption.Do(_ => count++);
+        return _noneOption.Do(_ => _sideEffectCounter++);
     }
 
     [Benchmark]

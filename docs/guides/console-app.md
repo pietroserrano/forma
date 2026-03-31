@@ -337,13 +337,13 @@ using Forma.Core.FP;
 // ── Result: Railway-Oriented Programming ────────────────────────────────────
 
 // Simple success/failure pipeline
-var result = Result<int, string>.Success(10)
-    .Then(x => Result<int, string>.Success(x * 2))
-    .Then(x => x > 15 ? Result<int, string>.Success(x) : Result<int, string>.Failure("Too small"))
-    .Then(x => Result<int, string>.Success(x + 5))
+var result = Result<int>.Success(10)
+    .Then(x => Result<int>.Success(x * 2))
+    .Then(x => x > 15 ? Result<int>.Success(x) : Result<int>.Failure(Error.BusinessRule("TooSmall", "Too small")))
+    .Then(x => Result<int>.Success(x + 5))
     .Match(
         onSuccess: value => $"Final value: {value}",
-        onFailure: error => $"Error: {error}");
+        onFailure: error => $"Error: {error.Message}");
 
 Console.WriteLine(result);
 // Output: Final value: 25
@@ -384,23 +384,23 @@ public class UserRegistrationService
     private Result<string> ValidateUsername(string username)
     {
         if (string.IsNullOrWhiteSpace(username))
-            return Result<string>.Failure("Username is required.");
+            return Result<string>.Failure(Error.Validation("username", "Username is required."));
         if (username.Length < 3)
-            return Result<string>.Failure("Username must be at least 3 characters.");
+            return Result<string>.Failure(Error.Validation("username", "Username must be at least 3 characters."));
         return Result<string>.Success(username);
     }
 
     private Result<string> ValidateEmail(string email)
     {
         if (!email.Contains('@'))
-            return Result<string>.Failure("Invalid email address.");
+            return Result<string>.Failure(Error.Validation("email", "Invalid email address."));
         return Result<string>.Success(email);
     }
 
     private Result<int> ValidateAge(int age)
     {
         if (age < 18)
-            return Result<int>.Failure("Must be at least 18 years old.");
+            return Result<int>.Failure(Error.Validation("age", "Must be at least 18 years old."));
         return Result<int>.Success(age);
     }
 }
@@ -437,14 +437,14 @@ public class FileService
         try
         {
             if (!File.Exists(path))
-                return Result<string>.Failure($"File not found: {path}");
+                return Result<string>.Failure(Error.Generic($"File not found: {path}"));
             
             var content = File.ReadAllText(path);
             return Result<string>.Success(content);
         }
         catch (Exception ex)
         {
-            return Result<string>.Failure($"Error reading file: {ex.Message}");
+            return Result<string>.Failure(Error.Generic($"Error reading file: {ex.Message}"));
         }
     }
 
@@ -457,14 +457,14 @@ public class FileService
         }
         catch (Exception ex)
         {
-            return Result<int>.Failure($"Error writing file: {ex.Message}");
+            return Result<int>.Failure(Error.Generic($"Error writing file: {ex.Message}"));
         }
     }
 
     public Result<string> ProcessFile(string inputPath, string outputPath)
     {
         return ReadFile(inputPath)
-            .Then(content => content.ToUpper())
+            .Then(content => Result<string>.Success(content.ToUpper()))
             .Do(processedContent => Console.WriteLine($"Processed {processedContent.Length} characters"))
             .Then(processedContent => 
                 WriteFile(outputPath, processedContent)
@@ -505,8 +505,8 @@ public class AppConfiguration
     public string GetRequiredSetting(string key, string defaultValue)
     {
         return GetSetting(key).Match(
-            onSome: value => value,
-            onNone: () => defaultValue
+            some: value => value,
+            none: () => defaultValue
         );
     }
 
@@ -514,10 +514,10 @@ public class AppConfiguration
     {
         return GetSetting(key)
             .Match(
-                onSome: value => int.TryParse(value, out var intValue)
+                some: value => int.TryParse(value, out var intValue)
                     ? Result<int>.Success(intValue)
-                    : Result<int>.Failure($"'{value}' is not a valid integer"),
-                onNone: () => Result<int>.Failure($"Setting '{key}' not found")
+                    : Result<int>.Failure(Error.DataFormat(key, "integer", value)),
+                none: () => Result<int>.Failure(Error.Generic($"Setting '{key}' not found"))
             );
     }
 }
@@ -530,8 +530,8 @@ config.SetSetting("InvalidNumber", "abc");
 // Get optional setting
 var theme = config.GetSetting("Theme")
     .Match(
-        onSome: v => $"Theme: {v}",
-        onNone: () => "Theme: default"
+        some: v => $"Theme: {v}",
+        none: () => "Theme: default"
     );
 Console.WriteLine(theme);
 // Output: Theme: default

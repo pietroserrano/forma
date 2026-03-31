@@ -398,7 +398,7 @@ public class ProductService
     private readonly List<Product> _products = new();
     private int _nextId = 1;
 
-    public Result<Product, string> CreateProduct(string name, decimal price, int stock)
+    public Result<Product> CreateProduct(string name, decimal price, int stock)
     {
         return ValidateName(name)
             .Then(_ => ValidatePrice(price))
@@ -407,7 +407,7 @@ public class ProductService
             {
                 var product = new Product(_nextId++, name, price, stock);
                 _products.Add(product);
-                return Result<Product, string>.Success(product);
+                return Result<Product>.Success(product);
             });
     }
 
@@ -417,29 +417,29 @@ public class ProductService
         return Option<Product>.From(product);
     }
 
-    private Result<string, string> ValidateName(string name)
+    private Result<string> ValidateName(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
-            return Result<string, string>.Failure("Product name is required");
+            return Result<string>.Failure(Error.Validation("name", "Product name is required"));
         if (name.Length < 3)
-            return Result<string, string>.Failure("Product name must be at least 3 characters");
-        return Result<string, string>.Success(name);
+            return Result<string>.Failure(Error.Validation("name", "Product name must be at least 3 characters"));
+        return Result<string>.Success(name);
     }
 
-    private Result<decimal, string> ValidatePrice(decimal price)
+    private Result<decimal> ValidatePrice(decimal price)
     {
         if (price <= 0)
-            return Result<decimal, string>.Failure("Price must be greater than zero");
+            return Result<decimal>.Failure(Error.Validation("price", "Price must be greater than zero"));
         if (price > 100000)
-            return Result<decimal, string>.Failure("Price exceeds maximum allowed value");
-        return Result<decimal, string>.Success(price);
+            return Result<decimal>.Failure(Error.Validation("price", "Price exceeds maximum allowed value"));
+        return Result<decimal>.Success(price);
     }
 
-    private Result<int, string> ValidateStock(int stock)
+    private Result<int> ValidateStock(int stock)
     {
         if (stock < 0)
-            return Result<int, string>.Failure("Stock cannot be negative");
-        return Result<int, string>.Success(stock);
+            return Result<int>.Failure(Error.Validation("stock", "Stock cannot be negative"));
+        return Result<int>.Success(stock);
     }
 }
 
@@ -496,7 +496,7 @@ public class OrderService
         _logger = logger;
     }
 
-    public async Task<Result<OrderDto, string>> CreateOrderAsync(CreateOrderRequest request)
+    public async Task<Result<OrderDto>> CreateOrderAsync(CreateOrderRequest request)
     {
         return await ValidateOrderAsync(request)
             .ThenAsync(async _ => await CheckInventoryAsync(request.ProductId, request.Quantity))
@@ -509,16 +509,16 @@ public class OrderService
             });
     }
 
-    private async Task<Result<bool, string>> ValidateOrderAsync(CreateOrderRequest request)
+    private async Task<Result<bool>> ValidateOrderAsync(CreateOrderRequest request)
     {
         if (request.Quantity <= 0)
-            return Result<bool, string>.Failure("Quantity must be greater than zero");
+            return Result<bool>.Failure(Error.Validation("quantity", "Quantity must be greater than zero"));
         if (request.Amount <= 0)
-            return Result<bool, string>.Failure("Amount must be greater than zero");
-        return await Task.FromResult(Result<bool, string>.Success(true));
+            return Result<bool>.Failure(Error.Validation("amount", "Amount must be greater than zero"));
+        return await Task.FromResult(Result<bool>.Success(true));
     }
 
-    private async Task<Result<bool, string>> CheckInventoryAsync(int productId, int quantity)
+    private async Task<Result<bool>> CheckInventoryAsync(int productId, int quantity)
     {
         try
         {
@@ -527,31 +527,31 @@ public class OrderService
             var available = Random.Shared.Next(0, 100);
             
             return available >= quantity
-                ? Result<bool, string>.Success(true)
-                : Result<bool, string>.Failure($"Insufficient inventory: {available} available, {quantity} requested");
+                ? Result<bool>.Success(true)
+                : Result<bool>.Failure(Error.BusinessRule("InsufficientInventory", $"Insufficient inventory: {available} available, {quantity} requested"));
         }
         catch (Exception ex)
         {
-            return Result<bool, string>.Failure($"Inventory check failed: {ex.Message}");
+            return Result<bool>.Failure(Error.Generic($"Inventory check failed: {ex.Message}"));
         }
     }
 
-    private async Task<Result<string, string>> ProcessPaymentAsync(string paymentMethod, decimal amount)
+    private async Task<Result<string>> ProcessPaymentAsync(string paymentMethod, decimal amount)
     {
         try
         {
             // Simulate payment processing
             await Task.Delay(200);
             var paymentId = $"PAY-{Guid.NewGuid():N}"[..16];
-            return Result<string, string>.Success(paymentId);
+            return Result<string>.Success(paymentId);
         }
         catch (Exception ex)
         {
-            return Result<string, string>.Failure($"Payment processing failed: {ex.Message}");
+            return Result<string>.Failure(Error.Generic($"Payment processing failed: {ex.Message}"));
         }
     }
 
-    private async Task<Result<OrderDto, string>> SaveOrderAsync(CreateOrderRequest request, string paymentId)
+    private async Task<Result<OrderDto>> SaveOrderAsync(CreateOrderRequest request, string paymentId)
     {
         try
         {
@@ -564,11 +564,11 @@ public class OrderService
                 PaymentId: paymentId,
                 Status: "Confirmed"
             );
-            return Result<OrderDto, string>.Success(order);
+            return Result<OrderDto>.Success(order);
         }
         catch (Exception ex)
         {
-            return Result<OrderDto, string>.Failure($"Failed to save order: {ex.Message}");
+            return Result<OrderDto>.Failure(Error.Generic($"Failed to save order: {ex.Message}"));
         }
     }
 
@@ -636,20 +636,20 @@ public class ProductSearchService
         // Apply optional filters using Option
         query = Option<string>.From(criteria.Query)
             .Match(
-                onSome: q => query.Where(p => p.Name.Contains(q, StringComparison.OrdinalIgnoreCase)),
-                onNone: () => query
+                some: q => query.Where(p => p.Name.Contains(q, StringComparison.OrdinalIgnoreCase)),
+                none: () => query
             );
 
         query = Option<int>.From(criteria.MinPrice)
             .Match(
-                onSome: min => query.Where(p => p.Price >= min),
-                onNone: () => query
+                some: min => query.Where(p => p.Price >= min),
+                none: () => query
             );
 
         query = Option<int>.From(criteria.MaxPrice)
             .Match(
-                onSome: max => query.Where(p => p.Price <= max),
-                onNone: () => query
+                some: max => query.Where(p => p.Price <= max),
+                none: () => query
             );
 
         var totalCount = query.Count();
@@ -732,15 +732,15 @@ public class CreateUserCommandHandler : IHandler<CreateUserCommand, Result<UserD
     {
         return _emailValidator.IsValid(email)
             ? Result<string>.Success(email)
-            : Result<string>.Failure("Invalid email address");
+            : Result<string>.Failure(Error.Validation("email", "Invalid email address"));
     }
 
     private Task<Result<string>> ValidatePassword(string password)
     {
         if (password.Length < 8)
-            return Task.FromResult(Result<string>.Failure("Password must be at least 8 characters"));
+            return Task.FromResult(Result<string>.Failure(Error.Validation("password", "Password must be at least 8 characters")));
         if (!password.Any(char.IsDigit))
-            return Task.FromResult(Result<string>.Failure("Password must contain at least one digit"));
+            return Task.FromResult(Result<string>.Failure(Error.Validation("password", "Password must contain at least one digit")));
         return Task.FromResult(Result<string>.Success(password));
     }
 
@@ -748,7 +748,7 @@ public class CreateUserCommandHandler : IHandler<CreateUserCommand, Result<UserD
     {
         var exists = await _repository.ExistsAsync(email);
         return exists
-            ? Result<Unit>.Failure($"User with email '{email}' already exists")
+            ? Result<Unit>.Failure(Error.Conflict($"User with email '{email}' already exists"))
             : Result<Unit>.Success(Unit.Value);
     }
 
@@ -762,7 +762,7 @@ public class CreateUserCommandHandler : IHandler<CreateUserCommand, Result<UserD
         }
         catch (Exception ex)
         {
-            return Result<UserDto>.Failure($"Failed to create user: {ex.Message}");
+            return Result<UserDto>.Failure(Error.Generic($"Failed to create user: {ex.Message}"));
         }
     }
 }

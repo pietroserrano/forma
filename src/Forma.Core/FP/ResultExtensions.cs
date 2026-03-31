@@ -149,9 +149,9 @@ public static class ResultExtensions
             var validationResult = validator(result.Value!);
             if (!validationResult.IsSuccess)
             {
-                // If it's a ValidationError, accumulate the errors
                 if (validationResult.Error is ValidationError validationError)
                 {
+                    // Accumulate field-level validation errors
                     foreach (var (field, messages) in validationError.Errors)
                     {
                         if (errors.ContainsKey(field))
@@ -159,6 +159,11 @@ public static class ResultExtensions
                         else
                             errors[field] = messages;
                     }
+                }
+                else
+                {
+                    // Fail fast on non-validation errors so they are never silently dropped
+                    return validationResult;
                 }
             }
         }

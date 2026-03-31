@@ -130,7 +130,7 @@ using Forma.Core.FP;
 
 var pipeline = await FetchDataAsync()
     .ThenAsync(data => ProcessAsync(data))
-    .ValidateAsync(result => IsValidAsync(result), () => "Validation failed")
+    .ValidateAsync(result => IsValidAsync(result), () => Error.Generic("Validation failed"))
     .DoAsync(result => LogAsync(result));
 ```
 
@@ -668,7 +668,7 @@ using Forma.Core.FP;
 
 var pipeline = await FetchDataAsync()
     .ThenAsync(data => ProcessAsync(data))
-    .ValidateAsync(result => IsValidAsync(result), () => "Validation failed")
+    .ValidateAsync(result => IsValidAsync(result), () => Error.Generic("Validation failed"))
     .DoAsync(result => LogAsync(result));
 ```
 

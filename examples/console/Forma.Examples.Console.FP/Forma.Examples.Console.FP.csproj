@@ -7,15 +7,18 @@
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
-	<ItemGroup>
+	<ItemGroup Condition="'$(UseProjectReferences)' != 'true'">
 		<PackageReference Include="Forma.Core" Version="1.1.2" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.7" />
-		<PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.7" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.7" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.5" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.5" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.5" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <ProjectReference Include="..\..\..\src\Forma.Core\Forma.Core.csproj" />
+	<ItemGroup Condition="'$(UseProjectReferences)' == 'true'">
+		<ProjectReference Include="..\..\..\src\Forma.Core\Forma.Core.csproj" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.5" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.5" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.5" />
 	</ItemGroup>
 
 </Project>
