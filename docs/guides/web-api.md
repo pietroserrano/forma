@@ -509,13 +509,13 @@ public class OrderService
             });
     }
 
-    private async Task<Result<Unit>> ValidateOrderAsync(CreateOrderRequest request)
+    private async Task<Result<bool>> ValidateOrderAsync(CreateOrderRequest request)
     {
         if (request.Quantity <= 0)
-            return Result<Unit>.Failure("Quantity must be greater than zero");
+            return Result<bool>.Failure("Quantity must be greater than zero");
         if (request.Amount <= 0)
-            return Result<Unit>.Failure("Amount must be greater than zero");
-        return await Task.FromResult(Result<Unit>.Success(Unit.Value));
+            return Result<bool>.Failure("Amount must be greater than zero");
+        return await Task.FromResult(Result<bool>.Success(true));
     }
 
     private async Task<Result<bool>> CheckInventoryAsync(int productId, int quantity)
