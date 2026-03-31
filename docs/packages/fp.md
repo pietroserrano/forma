@@ -1207,7 +1207,7 @@ public async Task<Result<ValidationSummary>> ValidateDataAsync(DataInput input)
     return isValid
         ? Result<ValidationSummary>.Success(summary)
         : Result<ValidationSummary>.Failure(
-            $"Validation failed with {errors.Count} error(s)");
+            Error.Generic($"Validation failed with {errors.Count} error(s)"));
 }
 ```
 
