@@ -337,10 +337,10 @@ using Forma.Core.FP;
 // ── Result: Railway-Oriented Programming ────────────────────────────────────
 
 // Simple success/failure pipeline
-var result = Result<int>.Success(10)
-    .Then(x => x * 2)
-    .Then(x => x > 15 ? Result<int>.Success(x) : Result<int>.Failure("Too small"))
-    .Then(x => x + 5)
+var result = Result<int, string>.Success(10)
+    .Then(x => Result<int, string>.Success(x * 2))
+    .Then(x => x > 15 ? Result<int, string>.Success(x) : Result<int, string>.Failure("Too small"))
+    .Then(x => Result<int, string>.Success(x + 5))
     .Match(
         onSuccess: value => $"Final value: {value}",
         onFailure: error => $"Error: {error}");
