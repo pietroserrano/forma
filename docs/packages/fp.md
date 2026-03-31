@@ -991,8 +991,8 @@ private async Task<Result<JsonConfig>> ParseJsonAsync(string json)
 Composing multiple API calls with error handling:
 
 ```csharp
-public record ApiError(int StatusCode, string Message)
-    : Error(Message, $"HTTP_{StatusCode}");
+public record ApiError(int StatusCode, string Detail)
+    : Error(Detail, $"HTTP_{StatusCode}");
 public record User(int Id, string Name);
 public record UserProfile(User User, List<Post> Posts, List<Comment> Comments);
 
