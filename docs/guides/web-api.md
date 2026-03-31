@@ -398,7 +398,7 @@ public class ProductService
     private readonly List<Product> _products = new();
     private int _nextId = 1;
 
-    public Result<Product> CreateProduct(string name, decimal price, int stock)
+    public Result<Product, string> CreateProduct(string name, decimal price, int stock)
     {
         return ValidateName(name)
             .Then(_ => ValidatePrice(price))
@@ -407,7 +407,7 @@ public class ProductService
             {
                 var product = new Product(_nextId++, name, price, stock);
                 _products.Add(product);
-                return Result<Product>.Success(product);
+                return Result<Product, string>.Success(product);
             });
     }
 
@@ -417,29 +417,29 @@ public class ProductService
         return Option<Product>.From(product);
     }
 
-    private Result<string> ValidateName(string name)
+    private Result<string, string> ValidateName(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
-            return Result<string>.Failure("Product name is required");
+            return Result<string, string>.Failure("Product name is required");
         if (name.Length < 3)
-            return Result<string>.Failure("Product name must be at least 3 characters");
-        return Result<string>.Success(name);
+            return Result<string, string>.Failure("Product name must be at least 3 characters");
+        return Result<string, string>.Success(name);
     }
 
-    private Result<decimal> ValidatePrice(decimal price)
+    private Result<decimal, string> ValidatePrice(decimal price)
     {
         if (price <= 0)
-            return Result<decimal>.Failure("Price must be greater than zero");
+            return Result<decimal, string>.Failure("Price must be greater than zero");
         if (price > 100000)
-            return Result<decimal>.Failure("Price exceeds maximum allowed value");
-        return Result<decimal>.Success(price);
+            return Result<decimal, string>.Failure("Price exceeds maximum allowed value");
+        return Result<decimal, string>.Success(price);
     }
 
-    private Result<int> ValidateStock(int stock)
+    private Result<int, string> ValidateStock(int stock)
     {
         if (stock < 0)
-            return Result<int>.Failure("Stock cannot be negative");
-        return Result<int>.Success(stock);
+            return Result<int, string>.Failure("Stock cannot be negative");
+        return Result<int, string>.Success(stock);
     }
 }
 
@@ -496,7 +496,7 @@ public class OrderService
         _logger = logger;
     }
 
-    public async Task<Result<OrderDto>> CreateOrderAsync(CreateOrderRequest request)
+    public async Task<Result<OrderDto, string>> CreateOrderAsync(CreateOrderRequest request)
     {
         return await ValidateOrderAsync(request)
             .ThenAsync(async _ => await CheckInventoryAsync(request.ProductId, request.Quantity))
@@ -509,16 +509,16 @@ public class OrderService
             });
     }
 
-    private async Task<Result<bool>> ValidateOrderAsync(CreateOrderRequest request)
+    private async Task<Result<bool, string>> ValidateOrderAsync(CreateOrderRequest request)
     {
         if (request.Quantity <= 0)
-            return Result<bool>.Failure("Quantity must be greater than zero");
+            return Result<bool, string>.Failure("Quantity must be greater than zero");
         if (request.Amount <= 0)
-            return Result<bool>.Failure("Amount must be greater than zero");
-        return await Task.FromResult(Result<bool>.Success(true));
+            return Result<bool, string>.Failure("Amount must be greater than zero");
+        return await Task.FromResult(Result<bool, string>.Success(true));
     }
 
-    private async Task<Result<bool>> CheckInventoryAsync(int productId, int quantity)
+    private async Task<Result<bool, string>> CheckInventoryAsync(int productId, int quantity)
     {
         try
         {
@@ -527,31 +527,31 @@ public class OrderService
             var available = Random.Shared.Next(0, 100);
             
             return available >= quantity
-                ? Result<bool>.Success(true)
-                : Result<bool>.Failure($"Insufficient inventory: {available} available, {quantity} requested");
+                ? Result<bool, string>.Success(true)
+                : Result<bool, string>.Failure($"Insufficient inventory: {available} available, {quantity} requested");
         }
         catch (Exception ex)
         {
-            return Result<bool>.Failure($"Inventory check failed: {ex.Message}");
+            return Result<bool, string>.Failure($"Inventory check failed: {ex.Message}");
         }
     }
 
-    private async Task<Result<string>> ProcessPaymentAsync(string paymentMethod, decimal amount)
+    private async Task<Result<string, string>> ProcessPaymentAsync(string paymentMethod, decimal amount)
     {
         try
         {
             // Simulate payment processing
             await Task.Delay(200);
             var paymentId = $"PAY-{Guid.NewGuid():N}"[..16];
-            return Result<string>.Success(paymentId);
+            return Result<string, string>.Success(paymentId);
         }
         catch (Exception ex)
         {
-            return Result<string>.Failure($"Payment processing failed: {ex.Message}");
+            return Result<string, string>.Failure($"Payment processing failed: {ex.Message}");
         }
     }
 
-    private async Task<Result<OrderDto>> SaveOrderAsync(CreateOrderRequest request, string paymentId)
+    private async Task<Result<OrderDto, string>> SaveOrderAsync(CreateOrderRequest request, string paymentId)
     {
         try
         {
@@ -564,11 +564,11 @@ public class OrderService
                 PaymentId: paymentId,
                 Status: "Confirmed"
             );
-            return Result<OrderDto>.Success(order);
+            return Result<OrderDto, string>.Success(order);
         }
         catch (Exception ex)
         {
-            return Result<OrderDto>.Failure($"Failed to save order: {ex.Message}");
+            return Result<OrderDto, string>.Failure($"Failed to save order: {ex.Message}");
         }
     }
 
