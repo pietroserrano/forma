@@ -12,14 +12,14 @@ var successPipeline = ParseInt("42")
     .Then(MultiplyByTwo)
     .Then(ConvertToMessage)
     .OnSuccess(result => Console.WriteLine($"   ✓ Success: {result}"))
-    .OnError(error => Console.WriteLine($"   ✗ Error: {error}"));
+    .OnError(error => Console.WriteLine($"   ✗ Error: {error.Message}"));
 
 Console.WriteLine("   Processing: \"invalid\"");
 var failurePipeline = ParseInt("invalid")
     .Then(MultiplyByTwo)
     .Then(ConvertToMessage)
     .OnSuccess(result => Console.WriteLine($"   ✓ Success: {result}"))
-    .OnError(error => Console.WriteLine($"   ✗ Error: {error}"));
+    .OnError(error => Console.WriteLine($"   ✗ Error: {error.Message}"));
 
 Console.WriteLine();
 
