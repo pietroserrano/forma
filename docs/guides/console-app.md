@@ -412,7 +412,7 @@ var request1 = new RegisterUserRequest("john", "john@example.com", 25);
 var result1 = service.RegisterUser(request1);
 Console.WriteLine(result1.Match(
     onSuccess: user => $"✓ User '{user.Username}' registered successfully!",
-    onFailure: error => $"✗ Registration failed: {error}"
+    onFailure: error => $"✗ Registration failed: {error.Message}"
 ));
 // Output: ✓ User 'john' registered successfully!
 
@@ -420,7 +420,7 @@ var request2 = new RegisterUserRequest("jane", "invalid-email", 25);
 var result2 = service.RegisterUser(request2);
 Console.WriteLine(result2.Match(
     onSuccess: user => $"✓ User '{user.Username}' registered successfully!",
-    onFailure: error => $"✗ Registration failed: {error}"
+    onFailure: error => $"✗ Registration failed: {error.Message}"
 ));
 // Output: ✗ Registration failed: Invalid email address.
 ```
@@ -478,7 +478,7 @@ var fileService = new FileService();
 var result = fileService.ProcessFile("input.txt", "output.txt")
     .Match(
         onSuccess: content => $"✓ File processed successfully: {content.Length} bytes",
-        onFailure: error => $"✗ Processing failed: {error}"
+        onFailure: error => $"✗ Processing failed: {error.Message}"
     );
 
 Console.WriteLine(result);
@@ -545,7 +545,7 @@ Console.WriteLine($"Timeout: {timeout}");
 var maxRetries = config.GetIntSetting("MaxRetries")
     .Match(
         onSuccess: value => $"Max retries: {value}",
-        onFailure: error => $"Error: {error}"
+        onFailure: error => $"Error: {error.Message}"
     );
 Console.WriteLine(maxRetries);
 // Output: Max retries: 3
@@ -553,7 +553,7 @@ Console.WriteLine(maxRetries);
 var invalid = config.GetIntSetting("InvalidNumber")
     .Match(
         onSuccess: value => $"Value: {value}",
-        onFailure: error => $"Error: {error}"
+        onFailure: error => $"Error: {error.Message}"
     );
 Console.WriteLine(invalid);
 // Output: Error: 'abc' is not a valid integer

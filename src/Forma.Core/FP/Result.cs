@@ -13,6 +13,11 @@ public class Result<T>
     public bool IsSuccess { get; }
 
     /// <summary>
+    /// Gets a value indicating whether the result is a failure.
+    /// </summary>
+    public bool IsFailure => !IsSuccess;
+
+    /// <summary>
     /// Gets the success value if the result is a success; otherwise, null.
     /// </summary>
     public T? Value { get; }
@@ -47,7 +52,11 @@ public class Result<T>
     /// </summary>
     /// <param name="value">The success value.</param>
     /// <returns>A result representing a successful operation.</returns>
-    public static Result<T> Success(T value) => new(value);
+    public static Result<T> Success(T value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return new(value);
+    }
 
     /// <summary>
     /// Creates a failed result.
