@@ -1,6 +1,4 @@
-﻿using static System.Runtime.InteropServices.JavaScript.JSType;
-
-namespace Forma.Core.FP;
+﻿namespace Forma.Core.FP;
 
 /// <summary>
 /// Represents the result of an operation, which can be either a success or a failure.
@@ -127,42 +125,4 @@ public class Result<TSuccess, TFailure>
         if (!IsSuccess) action(Error!);
         return this;
     }
-}
-
-/// <summary>
-/// Represents the result of an operation with Exception as the failure type.
-/// </summary>
-/// <typeparam name="TSuccess">The type of the success value.</typeparam>
-public class Result<TSuccess> : Result<TSuccess, Exception>
-    where TSuccess : notnull
-{
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Result{TSuccess}"/> class with a success value.
-    /// </summary>
-    /// <param name="value">The success value.</param>
-    protected Result(TSuccess value) : base(value)
-    {
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Result{TSuccess}"/> class with an exception.
-    /// </summary>
-    /// <param name="exception">The exception representing the failure.</param>
-    protected Result(Exception exception) : base(exception)
-    {
-    }
-
-    /// <summary>
-    /// Creates a successful result.
-    /// </summary>
-    /// <param name="value">The success value.</param>
-    /// <returns>A result representing a successful operation.</returns>
-    public new static Result<TSuccess> Success(TSuccess value) => new(value);
-
-    /// <summary>
-    /// Creates a failed result.
-    /// </summary>
-    /// <param name="exception">The exception representing the failure.</param>
-    /// <returns>A result representing a failed operation.</returns>
-    public new static Result<TSuccess> Failure(Exception exception) => new(exception);
 }

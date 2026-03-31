@@ -17,9 +17,10 @@ dotnet add package Forma.Core
 FP primitives allow you to model operations that may fail or return no value without using exceptions or null checks:
 
 - **`Result<TSuccess, TFailure>`** — represents an operation that either succeeds with a value or fails with an error
+- **`Error`** — immutable error types for functional error handling (no exceptions!)
 - **`Option<T>`** — represents a value that may or may not exist (a safer alternative to nullable types)
 
-Both types support **fluent chaining** via `Then`, `Do`, `Validate`, and `Match` methods, enabling you to compose pipelines that short-circuit on failure or absence.
+Both `Result` and `Option` support **fluent chaining** via `Then`, `Do`, `Validate`, and `Match` methods, enabling you to compose pipelines that short-circuit on failure or absence.
 
 ## Result<TSuccess, TFailure>
 
@@ -114,13 +115,304 @@ var pipeline = await FetchDataAsync()
     .DoAsync(async result => await LogAsync(result));
 ```
 
-### Result<TSuccess> (with Exception)
+## Error Types
 
-For operations that use `Exception` as the error type:
+**Forma.Core.FP** provides a hierarchy of immutable error types as a functional alternative to exceptions. Instead of throwing exceptions, return a `Result<TSuccess, Error>` that explicitly models success or failure.
+
+### Why Error Types?
+
+- 🎯 **Explicit**: Errors are part of the function signature
+- 🔒 **Immutable**: Error instances cannot be modified after creation
+- 🚀 **Performance**: No stack traces or exception overhead
+- 📦 **Serializable**: Easily serialized for APIs or logging
+- 🧩 **Composable**: Pattern match and transform errors functionally
+
+### Base Error Type
+
+All errors inherit from the abstract `Error` record:
 
 ```csharp
-var result = Result<int>.Success(42);
-var failure = Result<int>.Failure(new InvalidOperationException("Failed"));
+public abstract record Error(string Message, string Code)
+{
+    public Dictionary<string, object>? Metadata { get; init; }
+}
+```
+
+### Built-in Error Types
+
+#### GenericError
+Basic error with a message:
+```csharp
+var error = new GenericError("Something went wrong");
+var error = "Message".ToError(); // Extension method
+```
+
+#### ValidationError
+Validation errors with field-specific messages:
+```csharp
+var error = new ValidationError(
+    "Validation failed",
+    new Dictionary<string, string[]> 
+    {
+        ["Email"] = ["Email is required", "Email format is invalid"],
+        ["Age"] = ["Must be 18 or older"]
+    }
+);
+
+// Factory methods
+var error = ("Email", "Email is required").ToValidationError();
+var error = ErrorExtensions.ToValidationError(
+    ("Email", "Required"),
+    ("Age", "Must be 18+")
+);
+```
+
+#### NotFoundError
+Entity not found errors:
+```csharp
+var error = new NotFoundError("User", 42); 
+// Message: "User with id '42' not found"
+
+// Extension methods
+var error = 42.ToNotFoundError<User>();
+var error = ErrorExtensions.ToNotFoundError("Product", "ABC123");
+```
+
+#### ConflictError
+Duplicate or conflict errors:
+```csharp
+var error = new ConflictError("Email already exists", resourceId: "user@example.com");
+var error = "Email taken".ToConflictError("user@example.com");
+```
+
+#### UnauthorizedError
+Authorization failures:
+```csharp
+var error = new UnauthorizedError(); // Default message
+var error = new UnauthorizedError("Insufficient permissions");
+```
+
+#### BusinessRuleViolationError
+Domain/business logic violations:
+```csharp
+var error = new BusinessRuleViolationError(
+    "MaxOrderAmount", 
+    "Order exceeds maximum allowed amount"
+);
+
+var error = ErrorExtensions.ToBusinessRuleError(
+    "AccountNotActive",
+    "Cannot process payment for inactive account"
+);
+```
+
+#### ConcurrencyError
+Optimistic concurrency violations:
+```csharp
+var error = new ConcurrencyError("Order", orderId);
+var error = ErrorExtensions.ToConcurrencyError("Invoice", id);
+```
+
+#### DataFormatError
+Invalid data format:
+```csharp
+var error = new DataFormatError(
+    "BirthDate",
+    "yyyy-MM-dd",
+    "31/12/2000"
+);
+
+var error = ErrorExtensions.ToDataFormatError(
+    "Price", 
+    "decimal", 
+    "abc"
+);
+```
+
+#### ExternalServiceError
+Third-party service failures:
+```csharp
+var error = new ExternalServiceError(
+    "PaymentGateway",
+    "Connection timeout",
+    statusCode: 503
+) { Timeout = TimeSpan.FromSeconds(30) };
+
+var error = ErrorExtensions.ToExternalServiceError(
+    "EmailService",
+    "Failed to send",
+    500
+);
+```
+
+#### AggregateError
+Multiple errors combined:
+```csharp
+var errors = new List<Error> 
+{ 
+    new ValidationError(...), 
+    new BusinessRuleViolationError(...)
+};
+var aggregate = new AggregateError("Multiple errors occurred", errors);
+var aggregate = errors.ToAggregateError();
+```
+
+### Adding Metadata
+
+Enrich errors with additional context:
+
+```csharp
+var error = new GenericError("Database error")
+    .WithMetadata("Query", "SELECT * FROM Users")
+    .WithMetadata("Duration", TimeSpan.FromSeconds(5));
+```
+
+### Combining Validation Errors
+
+```csharp
+var error1 = new ValidationError("First", new Dictionary<string, string[]> 
+{ 
+    ["Email"] = ["Required"] 
+});
+
+var error2 = new ValidationError("Second", new Dictionary<string, string[]> 
+{ 
+    ["Email"] = ["Invalid format"],
+    ["Password"] = ["Too short"]
+});
+
+var combined = error1.Combine(error2);
+// Result: Email has both errors, Password has one
+```
+
+### Using Result with Error Types
+
+```csharp
+using Forma.Core.FP;
+
+public Result<User, Error> CreateUser(CreateUserDto dto)
+{
+    // Validation
+    var errors = new Dictionary<string, string[]>();
+    
+    if (string.IsNullOrEmpty(dto.Email))
+        errors["Email"] = ["Email is required"];
+    
+    if (dto.Age < 18)
+        errors["Age"] = ["Must be 18 or older"];
+    
+    if (errors.Any())
+        return Result<User, Error>.Failure(
+            new ValidationError("Invalid user data", errors));
+    
+    // Check for duplicates
+    if (_repository.EmailExists(dto.Email))
+        return Result<User, Error>.Failure(
+            new ConflictError("Email already in use", dto.Email));
+    
+    // Success
+    var user = new User(dto.Email, dto.Age);
+    return Result<User, Error>.Success(user);
+}
+
+// Usage
+var result = CreateUser(dto);
+var message = result.Match(
+    onSuccess: user => $"Welcome, {user.Email}!",
+    onFailure: error => error switch
+    {
+        ValidationError ve => $"Validation failed: {string.Join(", ", ve.Errors.Keys)}",
+        ConflictError ce => $"Conflict: {ce.Message}",
+        NotFoundError nf => $"Not found: {nf.EntityName}",
+        _ => "An error occurred"
+    }
+);
+```
+
+### Try Pattern for Exception Boundaries
+
+When interfacing with code that throws exceptions, use the `Try` helpers:
+
+```csharp
+using Forma.Core.FP;
+
+// Synchronous
+var result = ResultExtensions.Try(
+    () => JsonSerializer.Deserialize<User>(json),
+    ex => new DataFormatError("User", "JSON", json)
+);
+
+// Asynchronous
+var result = await ResultExtensions.TryAsync(
+    async () => await httpClient.GetAsync(url),
+    ex => new ExternalServiceError("API", ex.Message) 
+    {
+        Timeout = ex is TimeoutException ? TimeSpan.FromSeconds(30) : null
+    }
+);
+```
+
+### Advanced: Accumulating Validation Errors
+
+Use `ValidateAll` to collect all validation errors instead of short-circuiting:
+
+```csharp
+var result = Result<User, Error>.Success(user)
+    .ValidateAll(
+        u => u.Age >= 18 
+            ? Result<User, ValidationError>.Success(u)
+            : Result<User, ValidationError>.Failure(
+                ("Age", "Must be 18+").ToValidationError()),
+        u => !string.IsNullOrEmpty(u.Email)
+            ? Result<User, ValidationError>.Success(u) 
+            : Result<User, ValidationError>.Failure(
+                ("Email", "Required").ToValidationError())
+    );
+// If both fail, result contains both errors combined
+```
+
+### Recovery and Fallbacks
+
+```csharp
+// Recover with alternative value
+var result = GetUser(id)
+    .OrElse(User.Guest);
+
+// Recover with function
+var result = GetUser(id)
+    .Recover(error => error is NotFoundError ? User.Guest : null);
+
+// Try alternative operation
+var result = GetFromCache(key)
+    .OrElseTry(() => GetFromDatabase(key));
+```
+
+### Combining Multiple Results
+
+```csharp
+var result1 = GetUser(userId);
+var result2 = GetOrder(orderId);
+var result3 = GetPayment(paymentId);
+
+// All must succeed, returns tuple
+var combined = ResultExtensions.Combine(result1, result2, result3);
+combined.Match(
+    onSuccess: ((user, order, payment)) => ProcessCheckout(user, order, payment),
+    onFailure: error => HandleError(error) // First error
+);
+```
+
+### Async Extensions
+
+For async workflows, use `ThenAsync`, `DoAsync`, `ValidateAsync`, and `MatchAsync`:
+
+```csharp
+using Forma.Core.FP;
+
+var pipeline = await FetchDataAsync()
+    .ThenAsync(async data => await ProcessAsync(data))
+    .ValidateAsync(async result => await IsValidAsync(result), () => "Validation failed")
+    .DoAsync(async result => await LogAsync(result));
 ```
 
 ## Option<T>
@@ -222,10 +514,12 @@ var message = option.Match(
 
 ## Real-World Examples
 
-### Parsing and Validation Pipeline (Result)
+### Parsing and Validation Pipeline (Result with Error Types)
 
 ```csharp
-public Result<Order, string> CreateOrder(string customerIdStr, string amountStr)
+using Forma.Core.FP;
+
+public Result<Order, Error> CreateOrder(string customerIdStr, string amountStr)
 {
     return ParseInt(customerIdStr)
         .Then(customerId => ParseDecimal(amountStr)
@@ -235,23 +529,33 @@ public Result<Order, string> CreateOrder(string customerIdStr, string amountStr)
         );
 }
 
-private Result<int, string> ParseInt(string s) =>
+private Result<int, Error> ParseInt(string s) =>
     int.TryParse(s, out var val)
-        ? Result<int, string>.Success(val)
-        : Result<int, string>.Failure("Invalid integer");
+        ? Result<int, Error>.Success(val)
+        : Result<int, Error>.Failure(
+            new DataFormatError("CustomerId", "integer", s));
 
-private Result<decimal, string> ParseDecimal(string s) =>
+private Result<decimal, Error> ParseDecimal(string s) =>
     decimal.TryParse(s, out var val)
-        ? Result<decimal, string>.Success(val)
-        : Result<decimal, string>.Failure("Invalid decimal");
+        ? Result<decimal, Error>.Success(val)
+        : Result<decimal, Error>.Failure(
+            new DataFormatError("Amount", "decimal", s));
 
-private Result<decimal, string> ValidateAmount(decimal amount) =>
+private Result<decimal, Error> ValidateAmount(decimal amount) =>
     amount > 0
-        ? Result<decimal, string>.Success(amount)
-        : Result<decimal, string>.Failure("Amount must be positive");
+        ? Result<decimal, Error>.Success(amount)
+        : Result<decimal, Error>.Failure(
+            new BusinessRuleViolationError("PositiveAmount", "Amount must be positive"));
 
-private Result<Order, string> CreateOrderEntity(int customerId, decimal amount) =>
-    Result<Order, string>.Success(new Order(customerId, amount));
+private Result<Order, Error> CreateOrderEntity(int customerId, decimal amount)
+{
+    var customer = _repository.GetCustomer(customerId);
+    if (customer is null)
+        return Result<Order, Error>.Failure(
+            customerId.ToNotFoundError<Customer>());
+    
+    return Result<Order, Error>.Success(new Order(customerId, amount));
+}
 ```
 
 ### Safe Nullable Access (Option)
@@ -277,22 +581,25 @@ public string GetCustomerGreeting(int id)
 ### Async Database Query with Validation
 
 ```csharp
-public async Task<Result<User, string>> GetActiveUserAsync(int userId)
+using Forma.Core.FP;
+
+public async Task<Result<User, Error>> GetActiveUserAsync(int userId)
 {
     return await FetchUserAsync(userId)
         .ThenAsync(async user => await CheckIsActiveAsync(user)
-            ? Result<User, string>.Success(user)
-            : Result<User, string>.Failure("User is not active")
+            ? Result<User, Error>.Success(user)
+            : Result<User, Error>.Failure(
+                new BusinessRuleViolationError("ActiveUser", "User is not active"))
         )
         .DoAsync(async user => await LogAccessAsync(user));
 }
 
-private Task<Result<User, string>> FetchUserAsync(int id)
+private async Task<Result<User, Error>> FetchUserAsync(int id)
 {
     var user = await _dbContext.Users.FindAsync(id);
-    return user != null
-        ? Result<User, string>.Success(user)
-        : Result<User, string>.Failure("User not found");
+    return user is not null
+        ? Result<User, Error>.Success(user)
+        : Result<User, Error>.Failure(id.ToNotFoundError<User>());
 }
 ```
 

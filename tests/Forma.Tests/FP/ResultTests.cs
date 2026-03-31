@@ -259,36 +259,6 @@ public class ResultTests
 
     #endregion
 
-    #region Result<TSuccess> with Exception Tests
-
-    [Fact]
-    public void ResultWithException_Success_CreatesSuccessResult()
-    {
-        // Arrange & Act
-        var result = Result<int>.Success(42);
-
-        // Assert
-        Assert.True(result.IsSuccess);
-        Assert.Equal(42, result.Value);
-        Assert.Null(result.Error);
-    }
-
-    [Fact]
-    public void ResultWithException_Failure_CreatesFailureResult()
-    {
-        // Arrange
-        var exception = new InvalidOperationException("Test error");
-
-        // Act
-        var result = Result<int>.Failure(exception);
-
-        // Assert
-        Assert.False(result.IsSuccess);
-        Assert.Same(exception, result.Error);
-    }
-
-    #endregion
-
     #region Complex Pipeline Tests
 
     [Fact]
