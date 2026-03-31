@@ -378,7 +378,7 @@ public class UserRegistrationService
         return ValidateUsername(request.Username)
             .Then(_ => ValidateEmail(request.Email))
             .Then(_ => ValidateAge(request.Age))
-            .Then(_ => new User(request.Username, request.Email, request.Age));
+            .Then(_ => Result<User>.Success(new User(request.Username, request.Email, request.Age)));
     }
 
     private Result<string> ValidateUsername(string username)
