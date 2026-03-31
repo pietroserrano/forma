@@ -407,7 +407,7 @@ public class ProductService
             {
                 var product = new Product(_nextId++, name, price, stock);
                 _products.Add(product);
-                return product;
+                return Result<Product>.Success(product);
             });
     }
 
