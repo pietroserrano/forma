@@ -63,7 +63,11 @@ public class Result<T>
     /// </summary>
     /// <param name="error">The failure error.</param>
     /// <returns>A result representing a failed operation.</returns>
-    public static Result<T> Failure(Error error) => new(error);
+    public static Result<T> Failure(Error error)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+        return new(error);
+    }
 
     /// <summary>
     /// Binds the result to a new function, transforming the success value.
