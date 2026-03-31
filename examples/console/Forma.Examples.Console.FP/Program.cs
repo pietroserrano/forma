@@ -60,14 +60,14 @@ Console.WriteLine("3. Form Validation");
 var validUser = ValidateUser("john_doe", "john@example.com", "password123")
     .Match(
         onSuccess: user => $"   ✓ User validated: {user.Username} ({user.Email})",
-        onFailure: errors => $"   ✗ Validation errors:\n{string.Join("\n", errors.Select(e => $"      - {e}"))}"
+        onFailure: error => $"   ✗ {error.Message}"
     );
 Console.WriteLine(validUser);
 
 var invalidUser = ValidateUser("jo", "invalid", "123")
     .Match(
         onSuccess: user => $"   ✓ User validated: {user.Username} ({user.Email})",
-        onFailure: errors => $"   ✗ Validation errors:\n{string.Join("\n", errors.Select(e => $"      - {e}"))}"
+        onFailure: error => $"   ✗ {error.Message}"
     );
 Console.WriteLine(invalidUser);
 
@@ -81,14 +81,14 @@ Console.WriteLine("4. Chaining Multiple Operations (Calculator)");
 var calculation = Calculate("10", "+", "5")
     .Match(
         onSuccess: result => $"   ✓ Result: {result}",
-        onFailure: error => $"   ✗ {error}"
+        onFailure: error => $"   ✗ {error.Message}"
     );
 Console.WriteLine(calculation);
 
 var invalidCalc = Calculate("10", "/", "0")
     .Match(
         onSuccess: result => $"   ✓ Result: {result}",
-        onFailure: error => $"   ✗ {error}"
+        onFailure: error => $"   ✗ {error.Message}"
     );
 Console.WriteLine(invalidCalc);
 
@@ -129,7 +129,7 @@ Console.WriteLine("6. Combining Multiple Results");
 var order = CreateOrder("john@example.com", "100.50", "USD")
     .Match(
         onSuccess: o => $"   ✓ Order created: {o.CustomerEmail}, {o.Amount} {o.Currency}",
-        onFailure: error => $"   ✗ Order creation failed: {error}"
+        onFailure: error => $"   ✗ Order creation failed: {error.Message}"
     );
 Console.WriteLine(order);
 
@@ -139,18 +139,18 @@ Console.WriteLine("\n=== Examples Completed ===");
 // Helper Functions
 // ============================================
 
-static Result<int, string> ParseInt(string s)
+static Result<int> ParseInt(string s)
 {
     if (int.TryParse(s, out int val))
-        return Result<int, string>.Success(val);
-    return Result<int, string>.Failure($"'{s}' is not a valid integer");
+        return Result<int>.Success(val);
+    return Result<int>.Failure(Error.Generic($"'{s}' is not a valid integer"));
 }
 
-static Result<int, string> MultiplyByTwo(int x) => 
-    Result<int, string>.Success(x * 2);
+static Result<int> MultiplyByTwo(int x) => 
+    Result<int>.Success(x * 2);
 
-static Result<string, string> ConvertToMessage(int x) => 
-    Result<string, string>.Success($"The result is {x}");
+static Result<string> ConvertToMessage(int x) => 
+    Result<string>.Success($"The result is {x}");
 
 static Option<int> ParseIntOption(string s)
 {
@@ -166,10 +166,7 @@ static Option<string> GetSetting(Dictionary<string, string> settings, string key
         : Option<string>.None();
 }
 
-// Form Validation
-record UserInput(string Username, string Email, string Password);
-
-static Result<UserInput, List<string>> ValidateUser(string username, string email, string password)
+static Result<UserInput> ValidateUser(string username, string email, string password)
 {
     var errors = new List<string>();
 
@@ -183,12 +180,12 @@ static Result<UserInput, List<string>> ValidateUser(string username, string emai
         errors.Add("Password must be at least 8 characters");
 
     return errors.Any()
-        ? Result<UserInput, List<string>>.Failure(errors)
-        : Result<UserInput, List<string>>.Success(new UserInput(username, email, password));
+        ? Result<UserInput>.Failure(Error.Generic("Validation errors:\n" + string.Join("\n", errors.Select(e => $"  - {e}"))))
+        : Result<UserInput>.Success(new UserInput(username, email, password));
 }
 
 // Calculator
-static Result<double, string> Calculate(string leftStr, string operation, string rightStr)
+static Result<double> Calculate(string leftStr, string operation, string rightStr)
 {
     return ParseDouble(leftStr)
         .Then(left => ParseDouble(rightStr)
@@ -196,63 +193,67 @@ static Result<double, string> Calculate(string leftStr, string operation, string
         );
 }
 
-static Result<double, string> ParseDouble(string s)
+static Result<double> ParseDouble(string s)
 {
     if (double.TryParse(s, out double val))
-        return Result<double, string>.Success(val);
-    return Result<double, string>.Failure($"'{s}' is not a valid number");
+        return Result<double>.Success(val);
+    return Result<double>.Failure(Error.Generic($"'{s}' is not a valid number"));
 }
 
-static Result<double, string> PerformOperation(double left, double right, string operation)
+static Result<double> PerformOperation(double left, double right, string operation)
 {
     return operation switch
     {
-        "+" => Result<double, string>.Success(left + right),
-        "-" => Result<double, string>.Success(left - right),
-        "*" => Result<double, string>.Success(left * right),
-        "/" when right != 0 => Result<double, string>.Success(left / right),
-        "/" => Result<double, string>.Failure("Division by zero"),
-        _ => Result<double, string>.Failure($"Unknown operation: {operation}")
+        "+" => Result<double>.Success(left + right),
+        "-" => Result<double>.Success(left - right),
+        "*" => Result<double>.Success(left * right),
+        "/" when right != 0 => Result<double>.Success(left / right),
+        "/" => Result<double>.Failure(Error.Generic("Division by zero")),
+        _ => Result<double>.Failure(Error.Generic($"Unknown operation: {operation}"))
     };
 }
 
-// Order Creation
-record Order(string CustomerEmail, string Amount, string Currency);
-
-static Result<Order, string> CreateOrder(string email, string amount, string currency)
+static Result<Order> CreateOrder(string email, string amount, string currency)
 {
     return ValidateEmail(email)
         .Then(_ => ValidateAmount(amount)
             .Then(validAmount => ValidateCurrency(currency)
                 .Then(validCurrency => 
-                    Result<Order, string>.Success(new Order(email, validAmount, validCurrency)))
+                    Result<Order>.Success(new Order(email, validAmount, validCurrency)))
             )
         );
 }
 
-static Result<string, string> ValidateEmail(string email)
+static Result<string> ValidateEmail(string email)
 {
     if (string.IsNullOrWhiteSpace(email))
-        return Result<string, string>.Failure("Email is required");
+        return Result<string>.Failure(Error.Generic("Email is required"));
     if (!email.Contains("@"))
-        return Result<string, string>.Failure("Email must be valid");
-    return Result<string, string>.Success(email);
+        return Result<string>.Failure(Error.Generic("Email must be valid"));
+    return Result<string>.Success(email);
 }
 
-static Result<string, string> ValidateAmount(string amount)
+static Result<string> ValidateAmount(string amount)
 {
     if (!decimal.TryParse(amount, out var val))
-        return Result<string, string>.Failure("Amount must be a valid number");
+        return Result<string>.Failure(Error.Generic("Amount must be a valid number"));
     if (val <= 0)
-        return Result<string, string>.Failure("Amount must be positive");
-    return Result<string, string>.Success(amount);
+        return Result<string>.Failure(Error.Generic("Amount must be positive"));
+    return Result<string>.Success(amount);
 }
 
-static Result<string, string> ValidateCurrency(string currency)
+static Result<string> ValidateCurrency(string currency)
 {
     if (string.IsNullOrWhiteSpace(currency))
-        return Result<string, string>.Failure("Currency is required");
+        return Result<string>.Failure(Error.Generic("Currency is required"));
     if (currency.Length != 3)
-        return Result<string, string>.Failure("Currency must be 3 characters (e.g., USD, EUR)");
-    return Result<string, string>.Success(currency);
+        return Result<string>.Failure(Error.Generic("Currency must be 3 characters (e.g., USD, EUR)"));
+    return Result<string>.Success(currency);
 }
+
+// ============================================
+// Type Declarations
+// ============================================
+
+record UserInput(string Username, string Email, string Password);
+record Order(string CustomerEmail, string Amount, string Currency);

@@ -9,16 +9,16 @@ namespace Forma.Benchmarks;
 [RankColumn]
 public class FPBenchmarks
 {
-    private Result<int, string> _successResult = null!;
-    private Result<int, string> _failureResult = null!;
+    private Result<int> _successResult = null!;
+    private Result<int> _failureResult = null!;
     private Option<int> _someOption = null!;
     private Option<int> _noneOption = null!;
 
     [GlobalSetup]
     public void Setup()
     {
-        _successResult = Result<int, string>.Success(42);
-        _failureResult = Result<int, string>.Failure("Error");
+        _successResult = Result<int>.Success(42);
+        _failureResult = Result<int>.Failure(Error.Generic("Error"));
         _someOption = Option<int>.Some(42);
         _noneOption = Option<int>.None();
     }
@@ -26,71 +26,71 @@ public class FPBenchmarks
     #region Result Benchmarks
 
     [Benchmark]
-    public Result<int, string> Result_CreateSuccess()
+    public Result<int> Result_CreateSuccess()
     {
-        return Result<int, string>.Success(42);
+        return Result<int>.Success(42);
     }
 
     [Benchmark]
-    public Result<int, string> Result_CreateFailure()
+    public Result<int> Result_CreateFailure()
     {
-        return Result<int, string>.Failure("Error");
+        return Result<int>.Failure(Error.Generic("Error"));
     }
 
     [Benchmark]
-    public Result<int, string> Result_Then_Success()
+    public Result<int> Result_Then_Success()
     {
-        return _successResult.Then(x => Result<int, string>.Success(x * 2));
+        return _successResult.Then(x => Result<int>.Success(x * 2));
     }
 
     [Benchmark]
-    public Result<int, string> Result_Then_Failure()
+    public Result<int> Result_Then_Failure()
     {
-        return _failureResult.Then(x => Result<int, string>.Success(x * 2));
+        return _failureResult.Then(x => Result<int>.Success(x * 2));
     }
 
     [Benchmark]
-    public Result<int, string> Result_ChainedThen_Success()
+    public Result<int> Result_ChainedThen_Success()
     {
         return _successResult
-            .Then(x => Result<int, string>.Success(x * 2))
-            .Then(x => Result<int, string>.Success(x + 10))
-            .Then(x => Result<int, string>.Success(x - 5));
+            .Then(x => Result<int>.Success(x * 2))
+            .Then(x => Result<int>.Success(x + 10))
+            .Then(x => Result<int>.Success(x - 5));
     }
 
     [Benchmark]
-    public Result<int, string> Result_ChainedThen_Failure()
+    public Result<int> Result_ChainedThen_Failure()
     {
         return _failureResult
-            .Then(x => Result<int, string>.Success(x * 2))
-            .Then(x => Result<int, string>.Success(x + 10))
-            .Then(x => Result<int, string>.Success(x - 5));
+            .Then(x => Result<int>.Success(x * 2))
+            .Then(x => Result<int>.Success(x + 10))
+            .Then(x => Result<int>.Success(x - 5));
     }
 
     [Benchmark]
-    public Result<int, string> Result_Do_Success()
+    public Result<int> Result_Do_Success()
     {
         var count = 0;
         return _successResult.Do(_ => count++);
     }
 
     [Benchmark]
-    public Result<int, string> Result_Do_Failure()
+    public Result<int> Result_Do_Failure()
     {
         var count = 0;
         return _failureResult.Do(_ => count++);
     }
 
     [Benchmark]
-    public Result<int, string> Result_Validate_Success_Valid()
+    public Result<int> Result_Validate_Success_Valid()
     {
-        return _successResult.Validate(x => x > 10, () => "Too small");
+        return _successResult.Validate(x => x > 10, () => Error.Generic("Too small"));
     }
 
     [Benchmark]
-    public Result<int, string> Result_Validate_Success_Invalid()
+    public Result<int> Result_Validate_Success_Invalid()
     {
-        return _successResult.Validate(x => x > 100, () => "Too small");
+        return _successResult.Validate(x => x > 100, () => Error.Generic("Too small"));
     }
 
     [Benchmark]
@@ -98,7 +98,7 @@ public class FPBenchmarks
     {
         return _successResult.Match(
             onSuccess: x => $"Success: {x}",
-            onFailure: e => $"Failure: {e}"
+            onFailure: e => $"Failure: {e.Message}"
         );
     }
 
@@ -107,19 +107,19 @@ public class FPBenchmarks
     {
         return _failureResult.Match(
             onSuccess: x => $"Success: {x}",
-            onFailure: e => $"Failure: {e}"
+            onFailure: e => $"Failure: {e.Message}"
         );
     }
 
     [Benchmark]
-    public Result<int, string> Result_OnSuccess()
+    public Result<int> Result_OnSuccess()
     {
         var count = 0;
         return _successResult.OnSuccess(_ => count++);
     }
 
     [Benchmark]
-    public Result<int, string> Result_OnError()
+    public Result<int> Result_OnError()
     {
         var count = 0;
         return _failureResult.OnError(_ => count++);
@@ -129,12 +129,12 @@ public class FPBenchmarks
     public string Result_ComplexPipeline_Success()
     {
         return ParseInt("42")
-            .Then(x => Result<int, string>.Success(x * 2))
-            .Validate(x => x > 10, () => "Too small")
-            .Then(x => Result<string, string>.Success($"Result: {x}"))
+            .Then(x => Result<int>.Success(x * 2))
+            .Validate(x => x > 10, () => Error.Generic("Too small"))
+            .Then(x => Result<string>.Success($"Result: {x}"))
             .Match(
                 onSuccess: s => s,
-                onFailure: e => $"Error: {e}"
+                onFailure: e => $"Error: {e.Message}"
             );
     }
 
@@ -142,12 +142,12 @@ public class FPBenchmarks
     public string Result_ComplexPipeline_Failure()
     {
         return ParseInt("invalid")
-            .Then(x => Result<int, string>.Success(x * 2))
-            .Validate(x => x > 10, () => "Too small")
-            .Then(x => Result<string, string>.Success($"Result: {x}"))
+            .Then(x => Result<int>.Success(x * 2))
+            .Validate(x => x > 10, () => Error.Generic("Too small"))
+            .Then(x => Result<string>.Success($"Result: {x}"))
             .Match(
                 onSuccess: s => s,
-                onFailure: e => $"Error: {e}"
+                onFailure: e => $"Error: {e.Message}"
             );
     }
 
@@ -284,22 +284,22 @@ public class FPBenchmarks
     #region Async Benchmarks
 
     [Benchmark]
-    public async Task<Result<int, string>> Result_ThenAsync_Success()
+    public async Task<Result<int>> Result_ThenAsync_Success()
     {
         return await _successResult.ThenAsync(async x =>
         {
             await Task.Yield();
-            return Result<int, string>.Success(x * 2);
+            return Result<int>.Success(x * 2);
         });
     }
 
     [Benchmark]
-    public async Task<Result<int, string>> Result_ThenAsync_Failure()
+    public async Task<Result<int>> Result_ThenAsync_Failure()
     {
         return await _failureResult.ThenAsync(async x =>
         {
             await Task.Yield();
-            return Result<int, string>.Success(x * 2);
+            return Result<int>.Success(x * 2);
         });
     }
 
@@ -324,7 +324,7 @@ public class FPBenchmarks
     }
 
     [Benchmark]
-    public async Task<Result<int, string>> Result_DoAsync_Success()
+    public async Task<Result<int>> Result_DoAsync_Success()
     {
         return await Task.FromResult(_successResult).DoAsync(async _ =>
         {
@@ -342,7 +342,7 @@ public class FPBenchmarks
     }
 
     [Benchmark]
-    public async Task<Result<int, string>> Result_ValidateAsync_Success()
+    public async Task<Result<int>> Result_ValidateAsync_Success()
     {
         return await Task.FromResult(_successResult).ValidateAsync(
             async x =>
@@ -350,7 +350,7 @@ public class FPBenchmarks
                 await Task.Yield();
                 return x > 10;
             },
-            () => "Too small"
+            () => Error.Generic("Too small")
         );
     }
 
@@ -368,11 +368,11 @@ public class FPBenchmarks
 
     #region Helper Methods
 
-    private static Result<int, string> ParseInt(string s)
+    private static Result<int> ParseInt(string s)
     {
         if (int.TryParse(s, out int val))
-            return Result<int, string>.Success(val);
-        return Result<int, string>.Failure("Invalid number format");
+            return Result<int>.Success(val);
+        return Result<int>.Failure(Error.Generic("Invalid number format"));
     }
 
     private static Option<int> ParseIntOption(string s)
