@@ -11,8 +11,29 @@ public abstract record Error(string Message, string Code)
     /// <summary>
     /// Optional metadata associated with the error.
     /// </summary>
-    public Dictionary<string, object>? Metadata { get; init; }
+    private Dictionary<string, object>? _metadata;
 
+    /// <summary>
+    /// Optional metadata associated with the error.
+    /// Exposed as a read-only view to preserve immutability.
+    /// </summary>
+    public System.Collections.Generic.IReadOnlyDictionary<string, object>? Metadata
+    {
+        get => _metadata is null
+            ? null
+            : new System.Collections.ObjectModel.ReadOnlyDictionary<string, object>(_metadata);
+        init
+        {
+            if (value is null)
+            {
+                _metadata = null;
+            }
+            else
+            {
+                _metadata = new Dictionary<string, object>(value);
+            }
+        }
+    }
     // Factory Methods
 
     /// <summary>
