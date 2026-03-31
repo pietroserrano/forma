@@ -12,6 +12,124 @@ public abstract record Error(string Message, string Code)
     /// Optional metadata associated with the error.
     /// </summary>
     public Dictionary<string, object>? Metadata { get; init; }
+
+    // Factory Methods
+
+    /// <summary>
+    /// Creates a generic error with a custom message.
+    /// </summary>
+    /// <param name="message">The error message.</param>
+    /// <returns>A GenericError instance.</returns>
+    public static GenericError Generic(string message) => new(message);
+
+    /// <summary>
+    /// Creates a validation error with a single field error.
+    /// </summary>
+    /// <param name="field">The field name.</param>
+    /// <param name="error">The error message for the field.</param>
+    /// <returns>A ValidationError instance.</returns>
+    public static ValidationError Validation(string field, string error)
+        => new("Validation failed", new Dictionary<string, string[]> { [field] = [error] });
+
+    /// <summary>
+    /// Creates a validation error from multiple field errors.
+    /// </summary>
+    /// <param name="errors">Tuples of field name and error message.</param>
+    /// <returns>A ValidationError instance.</returns>
+    public static ValidationError Validation(params (string Field, string Error)[] errors)
+        => new("Validation failed",
+            errors.GroupBy(x => x.Field)
+                  .ToDictionary(g => g.Key, g => g.Select(x => x.Error).ToArray()));
+
+    /// <summary>
+    /// Creates a validation error from a dictionary of field errors.
+    /// </summary>
+    /// <param name="errors">Dictionary of field names to error messages.</param>
+    /// <param name="message">Optional overall message.</param>
+    /// <returns>A ValidationError instance.</returns>
+    public static ValidationError Validation(
+        Dictionary<string, string[]> errors,
+        string message = "Validation failed")
+        => new(message, errors);
+
+    /// <summary>
+    /// Creates a NotFoundError for a specific entity type and identifier.
+    /// </summary>
+    /// <typeparam name="TEntity">The type of the entity.</typeparam>
+    /// <param name="id">The entity identifier.</param>
+    /// <returns>A NotFoundError instance.</returns>
+    public static NotFoundError NotFound<TEntity>(object id)
+        => new(typeof(TEntity).Name, id);
+
+    /// <summary>
+    /// Creates a NotFoundError with a custom entity name.
+    /// </summary>
+    /// <param name="entityName">The name of the entity.</param>
+    /// <param name="id">The entity identifier.</param>
+    /// <returns>A NotFoundError instance.</returns>
+    public static NotFoundError NotFound(string entityName, object id)
+        => new(entityName, id);
+
+    /// <summary>
+    /// Creates a BusinessRuleViolationError.
+    /// </summary>
+    /// <param name="ruleName">The name of the violated business rule.</param>
+    /// <param name="message">The error message.</param>
+    /// <returns>A BusinessRuleViolationError instance.</returns>
+    public static BusinessRuleViolationError BusinessRule(string ruleName, string message)
+        => new(ruleName, message);
+
+    /// <summary>
+    /// Creates a ConflictError.
+    /// </summary>
+    /// <param name="message">The conflict message.</param>
+    /// <param name="resourceId">Optional resource identifier.</param>
+    /// <returns>A ConflictError instance.</returns>
+    public static ConflictError Conflict(string message, string? resourceId = null)
+        => new(message, resourceId);
+
+    /// <summary>
+    /// Creates a ConcurrencyError.
+    /// </summary>
+    /// <param name="resourceType">The resource type.</param>
+    /// <param name="resourceId">The resource identifier.</param>
+    /// <returns>A ConcurrencyError instance.</returns>
+    public static ConcurrencyError Concurrency(string resourceType, object resourceId)
+        => new(resourceType, resourceId);
+
+    /// <summary>
+    /// Creates a DataFormatError.
+    /// </summary>
+    /// <param name="fieldName">The field name.</param>
+    /// <param name="expectedFormat">The expected format.</param>
+    /// <param name="actualValue">The actual value provided.</param>
+    /// <returns>A DataFormatError instance.</returns>
+    public static DataFormatError DataFormat(string fieldName, string expectedFormat, string actualValue)
+        => new(fieldName, expectedFormat, actualValue);
+
+    /// <summary>
+    /// Creates an ExternalServiceError.
+    /// </summary>
+    /// <param name="serviceName">The external service name.</param>
+    /// <param name="message">The error message.</param>
+    /// <param name="statusCode">Optional HTTP status code.</param>
+    /// <returns>An ExternalServiceError instance.</returns>
+    public static ExternalServiceError ExternalService(
+        string serviceName,
+        string message,
+        int? statusCode = null)
+        => new(serviceName, message, statusCode);
+
+    /// <summary>
+    /// Creates an AggregateError from multiple errors.
+    /// </summary>
+    /// <param name="errors">The collection of errors.</param>
+    /// <param name="message">Optional overall message.</param>
+    /// <returns>An AggregateError instance.</returns>
+    public static AggregateError Aggregate(
+        IEnumerable<Error> errors,
+        string message = "Multiple errors occurred")
+        => new(message, errors.ToList());
 }
 
 /// <summary>

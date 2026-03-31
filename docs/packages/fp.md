@@ -22,6 +22,25 @@ FP primitives allow you to model operations that may fail or return no value wit
 
 Both `Result` and `Option` support **fluent chaining** via `Then`, `Do`, `Validate`, and `Match` methods, enabling you to compose pipelines that short-circuit on failure or absence.
 
+## Table of Contents
+
+- [Result<TSuccess, TFailure>](#resulttsuccesstfailure)
+  - [Creating Results](#creating-results)
+  - [Transforming, Validating, Pattern Matching](#transforming-with-then)
+  - [Async Extensions](#async-extensions)
+- [Error Types](#error-types)
+  - [Creating Errors with Factory Methods](#creating-errors-with-factory-methods)
+  - [Built-in Error Types](#built-in-error-types)
+  - [When to Use Each Error Type](#when-to-use-each-error-type) 🎯
+  - [Try Pattern for Exception Boundaries](#try-pattern-for-exception-boundaries)
+- [Option<T>](#optiont)
+  - [Creating Options](#creating-options)
+  - [Transforming and Matching](#transforming-with-then-1)
+- [Real-World Examples](#real-world-examples)
+- [Advanced Scenarios](#advanced-scenarios)
+- [Best Practices](#best-practices) 📖
+- [API Reference](#api-reference)
+
 ## Result<TSuccess, TFailure>
 
 `Result<TSuccess, TFailure>` models operations that can succeed or fail with explicit error types.
@@ -138,51 +157,109 @@ public abstract record Error(string Message, string Code)
 }
 ```
 
+### Creating Errors with Factory Methods
+
+**Forma.Core.FP** provides static factory methods on the `Error` class for creating error instances:
+
+```csharp
+using Forma.Core.FP;
+
+// Generic errors
+var error = Error.Generic("Something went wrong");
+
+// Validation errors (single field)
+var error = Error.Validation("Email", "Email is required");
+
+// Validation errors (multiple fields)
+var error = Error.Validation(
+    ("Email", "Email is required"),
+    ("Password", "Password must be at least 8 characters")
+);
+
+// Validation errors (from dictionary)
+var errors = new Dictionary<string, string[]> 
+{
+    ["Email"] = ["Email is required", "Invalid format"],
+    ["Age"] = ["Must be 18 or older"]
+};
+var error = Error.Validation(errors);
+
+// Not found errors with type inference
+var error = Error.NotFound<User>(userId);
+var error = Error.NotFound("Product", "ABC123");
+
+// Business rule violations
+var error = Error.BusinessRule("MaxAmount", "Exceeds limit");
+
+// Conflict errors
+var error = Error.Conflict("Email already exists", "user@example.com");
+
+// Concurrency errors
+var error = Error.Concurrency("Order", orderId);
+
+// Data format errors
+var error = Error.DataFormat("BirthDate", "yyyy-MM-dd", "invalid");
+
+// External service errors
+var error = Error.ExternalService("PaymentAPI", "Timeout", 503);
+
+// Aggregate multiple errors
+var aggregate = Error.Aggregate(errors, "Multiple errors occurred");
+
+// Add metadata to any error (extension method)
+var enrichedError = error.WithMetadata("RequestId", "abc-123");
+
+// Combine validation errors (extension method)
+var combined = error1.Combine(error2);
+```
+
+These static factory methods provide a clean, discoverable API for error creation. They are the **recommended way** to create errors instead of using constructors directly.
+
 ### Built-in Error Types
 
 #### GenericError
 Basic error with a message:
 ```csharp
-var error = new GenericError("Something went wrong");
-var error = "Message".ToError(); // Extension method
+var error = Error.Generic("Something went wrong");
 ```
 
 #### ValidationError
 Validation errors with field-specific messages:
 ```csharp
-var error = new ValidationError(
-    "Validation failed",
-    new Dictionary<string, string[]> 
-    {
-        ["Email"] = ["Email is required", "Email format is invalid"],
-        ["Age"] = ["Must be 18 or older"]
-    }
+// Single field error
+var error = Error.Validation("Email", "Email is required");
+
+// Multiple field errors
+var error = Error.Validation(
+    ("Email", "Email is required"),
+    ("Email", "Email format is invalid"),
+    ("Age", "Must be 18 or older")
 );
 
-// Factory methods
-var error = ("Email", "Email is required").ToValidationError();
-var error = ErrorExtensions.ToValidationError(
-    ("Email", "Required"),
-    ("Age", "Must be 18+")
-);
+// From dictionary
+var errors = new Dictionary<string, string[]> 
+{
+    ["Email"] = ["Email is required", "Email format is invalid"],
+    ["Age"] = ["Must be 18 or older"]
+};
+var error = Error.Validation(errors);
 ```
 
 #### NotFoundError
 Entity not found errors:
 ```csharp
-var error = new NotFoundError("User", 42); 
+// With generic type
+var error = Error.NotFound<User>(42);
 // Message: "User with id '42' not found"
 
-// Extension methods
-var error = 42.ToNotFoundError<User>();
-var error = ErrorExtensions.ToNotFoundError("Product", "ABC123");
+// With custom entity name
+var error = Error.NotFound("Product", "ABC123");
 ```
 
 #### ConflictError
 Duplicate or conflict errors:
 ```csharp
-var error = new ConflictError("Email already exists", resourceId: "user@example.com");
-var error = "Email taken".ToConflictError("user@example.com");
+var error = Error.Conflict("Email already exists", "user@example.com");
 ```
 
 #### UnauthorizedError
@@ -195,54 +272,36 @@ var error = new UnauthorizedError("Insufficient permissions");
 #### BusinessRuleViolationError
 Domain/business logic violations:
 ```csharp
-var error = new BusinessRuleViolationError(
+var error = Error.BusinessRule(
     "MaxOrderAmount", 
     "Order exceeds maximum allowed amount"
-);
-
-var error = ErrorExtensions.ToBusinessRuleError(
-    "AccountNotActive",
-    "Cannot process payment for inactive account"
 );
 ```
 
 #### ConcurrencyError
 Optimistic concurrency violations:
 ```csharp
-var error = new ConcurrencyError("Order", orderId);
-var error = ErrorExtensions.ToConcurrencyError("Invoice", id);
+var error = Error.Concurrency("Order", orderId);
 ```
 
 #### DataFormatError
 Invalid data format:
 ```csharp
-var error = new DataFormatError(
+var error = Error.DataFormat(
     "BirthDate",
     "yyyy-MM-dd",
     "31/12/2000"
-);
-
-var error = ErrorExtensions.ToDataFormatError(
-    "Price", 
-    "decimal", 
-    "abc"
 );
 ```
 
 #### ExternalServiceError
 Third-party service failures:
 ```csharp
-var error = new ExternalServiceError(
+var error = Error.ExternalService(
     "PaymentGateway",
     "Connection timeout",
-    statusCode: 503
-) { Timeout = TimeSpan.FromSeconds(30) };
-
-var error = ErrorExtensions.ToExternalServiceError(
-    "EmailService",
-    "Failed to send",
-    500
-);
+    503
+).WithMetadata("Timeout", TimeSpan.FromSeconds(30));
 ```
 
 #### AggregateError
@@ -250,11 +309,10 @@ Multiple errors combined:
 ```csharp
 var errors = new List<Error> 
 { 
-    new ValidationError(...), 
-    new BusinessRuleViolationError(...)
+    Error.Validation("Email", "Required"),
+    Error.BusinessRule("MaxAmount", "Exceeded")
 };
-var aggregate = new AggregateError("Multiple errors occurred", errors);
-var aggregate = errors.ToAggregateError();
+var aggregate = Error.Aggregate(errors, "Multiple errors occurred");
 ```
 
 ### Adding Metadata
@@ -262,7 +320,7 @@ var aggregate = errors.ToAggregateError();
 Enrich errors with additional context:
 
 ```csharp
-var error = new GenericError("Database error")
+var error = Error.Generic("Database error")
     .WithMetadata("Query", "SELECT * FROM Users")
     .WithMetadata("Duration", TimeSpan.FromSeconds(5));
 ```
@@ -270,20 +328,221 @@ var error = new GenericError("Database error")
 ### Combining Validation Errors
 
 ```csharp
-var error1 = new ValidationError("First", new Dictionary<string, string[]> 
-{ 
-    ["Email"] = ["Required"] 
-});
+var error1 = Error.Validation("Email", "Required");
 
-var error2 = new ValidationError("Second", new Dictionary<string, string[]> 
-{ 
-    ["Email"] = ["Invalid format"],
-    ["Password"] = ["Too short"]
-});
+var error2 = Error.Validation(
+    ("Email", "Invalid format"),
+    ("Password", "Too short")
+);
 
 var combined = error1.Combine(error2);
 // Result: Email has both errors, Password has one
 ```
+
+## When to Use Each Error Type
+
+Choosing the right error type makes your code more maintainable and errors easier to handle. Here's a guide:
+
+### GenericError
+**Use when:**
+- The error doesn't fit any specific category
+- You're wrapping unexpected exceptions
+- It's a temporary placeholder during development
+
+**Avoid when:**
+- You can use a more specific error type
+- The error has a well-defined category (validation, not found, etc.)
+
+**Example scenarios:**
+```csharp
+// Generic database error
+Error.Generic("Database connection failed")
+
+// Unexpected state
+Error.Generic("Invalid application state")
+```
+
+### ValidationError
+**Use when:**
+- Validating user input (forms, API requests)
+- Input fails format, length, or constraint checks
+- Multiple fields need validation
+
+**Don't use for:**
+- Business rule violations (use `BusinessRuleViolationError`)
+- Authorization checks (use `UnauthorizedError`)
+
+**Example scenarios:**
+```csharp
+// Form validation 
+Error.Validation("Email", "Invalid email format")
+
+// Multiple field validation
+Error.Validation(
+    ("Username", "Must be at least 3 characters"),
+    ("Password", "Must contain a number")
+)
+```
+
+### NotFoundError
+**Use when:**
+- An entity doesn't exist in the database
+- A resource is not found by its identifier
+- You queried for something that should exist but doesn't
+
+**Example scenarios:**
+```csharp
+// Entity not found in repository
+Error.NotFound<User>(userId)
+
+// File not found
+Error.NotFound("ConfigFile", "appsettings.json")
+```
+
+### ConflictError
+**Use when:**
+- Creating a resource that already exists (duplicate key)
+- The operation violates a uniqueness constraint
+- Concurrent modifications create a conflict
+
+**Don't confuse with:**
+- `ConcurrencyError` (optimistic concurrency violations)
+- `BusinessRuleViolationError` (business logic violations)
+
+**Example scenarios:**
+```csharp
+// Duplicate email registration
+Error.Conflict("Email already registered", email)
+
+// Username taken
+Error.Conflict("Username already exists", username)
+```
+
+### UnauthorizedError
+**Use when:**
+- User is not authenticated
+- User lacks required permissions
+- Token is invalid or expired
+
+**Don't use for:**
+- Validation failures (use `ValidationError`)
+- Business rule violations (use `BusinessRuleViolationError`)
+
+**Example scenarios:**
+```csharp
+// Not authenticated
+new UnauthorizedError()
+
+// Missing permissions
+new UnauthorizedError("Admin role required")
+```
+
+### BusinessRuleViolationError
+**Use when:**
+- Domain/business logic is violated
+- The operation is technically valid but violates business rules
+- Rules are specific to your business domain
+
+**Don't confuse with:**
+- `ValidationError` (format/constraint violations)
+- `ConflictError` (uniqueness violations)
+
+**Example scenarios:**
+```csharp
+// Domain rule
+Error.BusinessRule("MaxOrderAmount", "Order exceeds $10,000 limit")
+
+// Account state rule
+Error.BusinessRule("AccountActive", "Cannot process payment for inactive account")
+
+// Workflow rule
+Error.BusinessRule("MinimumAge", "Must be 21 to purchase alcohol")
+```
+
+### ConcurrencyError
+**Use when:**
+- Optimistic concurrency check fails
+- Entity was modified by another process
+- Version/timestamp mismatch detected
+
+**Don't confuse with:**
+- `ConflictError` (duplicate resources)
+
+**Example scenarios:**
+```csharp
+// Entity version mismatch
+Error.Concurrency("Order", orderId)
+
+// Timestamp conflict
+Error.Concurrency("Invoice", invoiceId)
+```
+
+### DataFormatError
+**Use when:**
+- Parsing fails (JSON, XML, CSV)
+- Date/time format is invalid
+- Data type conversion fails
+
+**Don't confuse with:**
+- `ValidationError` (use for business input validation)
+
+**Example scenarios:**
+```csharp
+// Invalid date format
+Error.DataFormat("BirthDate", "yyyy-MM-dd", "32/13/2020")
+
+// JSON parsing failed
+Error.DataFormat("RequestBody", "JSON", rawData)
+
+// Invalid number format
+Error.DataFormat("Amount", "decimal", "abc.def")
+```
+
+### ExternalServiceError
+**Use when:**
+- Calling external APIs/services
+- Third-party service is unavailable
+- HTTP requests fail
+
+**Example scenarios:**
+```csharp
+// Payment gateway timeout
+Error.ExternalService("StripeAPI", "Request timeout", 504)
+
+// Email service failure
+Error.ExternalService("SendGrid", "Service unavailable", 503)
+```
+
+### AggregateError
+**Use when:**
+- Collecting multiple unrelated errors
+- Running parallel validations
+- Reporting all errors at once (don't short-circuit)
+
+**Example scenarios:**
+```csharp
+// Multiple validation failures
+var errors = new List<Error>
+{
+    Error.Validation("Email", "Required"),
+    Error.Validation("Password", "Too weak"),
+    Error.BusinessRule("TermsAccepted", "Must accept terms")
+};
+Error.Aggregate(errors, "Registration failed")
+```
+
+## Error Selection Flowchart
+
+1. **Is it user input validation?** → `ValidationError`
+2. **Is an entity missing?** → `NotFoundError`
+3. **Is it a duplicate/uniqueness violation?** → `ConflictError`
+4. **Is it an authorization issue?** → `UnauthorizedError`
+5. **Is it a domain business rule?** → `BusinessRuleViolationError`
+6. **Is it a concurrent modification?** → `ConcurrencyError`
+7. **Is it a data format/parsing issue?** → `DataFormatError`
+8. **Is it an external service failure?** → `ExternalServiceError`
+9. **Do you have multiple errors?** → `AggregateError`
+10. **None of the above?** → `GenericError` (consider if a more specific type could be added)
 
 ### Using Result with Error Types
 
@@ -303,12 +562,12 @@ public Result<User, Error> CreateUser(CreateUserDto dto)
     
     if (errors.Any())
         return Result<User, Error>.Failure(
-            new ValidationError("Invalid user data", errors));
+            Error.Validation(errors, "Invalid user data"));
     
     // Check for duplicates
     if (_repository.EmailExists(dto.Email))
         return Result<User, Error>.Failure(
-            new ConflictError("Email already in use", dto.Email));
+            Error.Conflict("Email already in use", dto.Email));
     
     // Success
     var user = new User(dto.Email, dto.Age);
@@ -339,16 +598,14 @@ using Forma.Core.FP;
 // Synchronous
 var result = ResultExtensions.Try(
     () => JsonSerializer.Deserialize<User>(json),
-    ex => new DataFormatError("User", "JSON", json)
+    ex => Error.DataFormat("User", "JSON", json)
 );
 
 // Asynchronous
 var result = await ResultExtensions.TryAsync(
     () => httpClient.GetAsync(url),
-    ex => new ExternalServiceError("API", ex.Message) 
-    {
-        Timeout = ex is TimeoutException ? TimeSpan.FromSeconds(30) : null
-    }
+    ex => Error.ExternalService("API", ex.Message)
+        .WithMetadata("Timeout", ex is TimeoutException ? TimeSpan.FromSeconds(30) : null)
 );
 ```
 
@@ -362,11 +619,11 @@ var result = Result<User, Error>.Success(user)
         u => u.Age >= 18 
             ? Result<User, ValidationError>.Success(u)
             : Result<User, ValidationError>.Failure(
-                ("Age", "Must be 18+").ToValidationError()),
+                Error.Validation("Age", "Must be 18+")),
         u => !string.IsNullOrEmpty(u.Email)
             ? Result<User, ValidationError>.Success(u) 
             : Result<User, ValidationError>.Failure(
-                ("Email", "Required").ToValidationError())
+                Error.Validation("Email", "Required"))
     );
 // If both fail, result contains both errors combined
 ```
@@ -533,26 +790,26 @@ private Result<int, Error> ParseInt(string s) =>
     int.TryParse(s, out var val)
         ? Result<int, Error>.Success(val)
         : Result<int, Error>.Failure(
-            new DataFormatError("CustomerId", "integer", s));
+            Error.DataFormat("CustomerId", "integer", s));
 
 private Result<decimal, Error> ParseDecimal(string s) =>
     decimal.TryParse(s, out var val)
         ? Result<decimal, Error>.Success(val)
         : Result<decimal, Error>.Failure(
-            new DataFormatError("Amount", "decimal", s));
+            Error.DataFormat("Amount", "decimal", s));
 
 private Result<decimal, Error> ValidateAmount(decimal amount) =>
     amount > 0
         ? Result<decimal, Error>.Success(amount)
         : Result<decimal, Error>.Failure(
-            new BusinessRuleViolationError("PositiveAmount", "Amount must be positive"));
+            Error.BusinessRule("PositiveAmount", "Amount must be positive"));
 
 private Result<Order, Error> CreateOrderEntity(int customerId, decimal amount)
 {
     var customer = _repository.GetCustomer(customerId);
     if (customer is null)
         return Result<Order, Error>.Failure(
-            customerId.ToNotFoundError<Customer>());
+            Error.NotFound<Customer>(customerId));
     
     return Result<Order, Error>.Success(new Order(customerId, amount));
 }
@@ -592,7 +849,7 @@ public async Task<Result<User, Error>> GetActiveUserAsync(int userId)
             return isActive
                 ? Result<User, Error>.Success(user)
                 : Result<User, Error>.Failure(
-                    new BusinessRuleViolationError("ActiveUser", "User is not active"));
+                    Error.BusinessRule("ActiveUser", "User is not active"));
         })
         .DoAsync(user => LogAccessAsync(user));
 }
@@ -602,7 +859,7 @@ private async Task<Result<User, Error>> FetchUserAsync(int id)
     var user = await _dbContext.Users.FindAsync(id);
     return user is not null
         ? Result<User, Error>.Success(user)
-        : Result<User, Error>.Failure(id.ToNotFoundError<User>());
+        : Result<User, Error>.Failure(Error.NotFound<User>(id));
 }
 ```
 
@@ -1005,6 +1262,249 @@ var product = await cachedRepo
         some: p => $"Product: {p.Name}",
         none: () => "Product not found"
     );
+```
+
+## Best Practices
+
+### Error Handling Guidelines
+
+#### 1. Be Specific with Error Types
+Always prefer specific error types over `GenericError`:
+
+```csharp
+// ❌ Too generic
+return Result<User, Error>.Failure(
+    Error.Generic("User not found")
+);
+
+// ✅ Specific and searchable
+return Result<User, Error>.Failure(
+    Error.NotFound<User>(userId)
+);
+```
+
+#### 2. Use ValidationError for Input, BusinessRuleViolationError for Logic
+
+```csharp
+// ❌ Wrong - business rule treated as validation
+return Error.Validation("Amount", "Exceeds daily limit");
+
+// ✅ Correct - clear distinction
+return Error.BusinessRule("DailyLimit", "Transaction exceeds $1000 daily limit");
+```
+
+#### 3. Add Context with Metadata
+
+```csharp
+// ❌ Missing context
+return Error.ExternalService("PaymentAPI", "Request failed", 500);
+
+// ✅ Rich error context
+return Error.ExternalService("PaymentAPI", "Request failed", 500)
+    .WithMetadata("TransactionId", transactionId)
+    .WithMetadata("Timestamp", DateTime.UtcNow)
+    .WithMetadata("Endpoint", "/api/payments/process");
+```
+
+#### 4. Pattern Match for Error Handling
+
+```csharp
+// ✅ Type-safe error handling
+result.Match(
+    onSuccess: user => Ok(user),
+    onFailure: error => error switch
+    {
+        ValidationError ve => BadRequest(ve.Errors),
+        NotFoundError nf => NotFound(nf.Message),
+        UnauthorizedError _ => Unauthorized(),
+        ConflictError ce => Conflict(ce.Message),
+        _ => StatusCode(500, error.Message)
+    }
+);
+```
+
+#### 5. Aggregate Related Errors
+
+```csharp
+// ❌ Returning first error only
+if (!isValidEmail) return Error.Validation("Email", "Invalid");
+if (!isValidPhone) return Error.Validation("Phone", "Invalid");
+
+// ✅ Collect all errors
+var errors = new List<Error>();
+if (!isValidEmail) errors.Add(Error.Validation("Email", "Invalid"));
+if (!isValidPhone) errors.Add(Error.Validation("Phone", "Invalid"));
+
+if (errors.Any())
+    return Result<User, Error>.Failure(
+        Error.Aggregate(errors, "Validation failed")
+    );
+```
+
+#### 6. Don't Mix Exceptions and Errors
+
+```csharp
+// ❌ Mixing styles
+try
+{
+    return Result<Data, Error>.Success(Process());
+}
+catch (Exception ex)
+{
+    throw; // Don't throw after starting Result pattern
+}
+
+// ✅ Consistent error handling
+return ResultExtensions.Try(
+    () => Process(),
+    ex => Error.Generic(ex.Message)
+);
+```
+
+#### 7. Use Try/TryAsync for Exception Boundaries
+
+```csharp
+// ✅ Safe boundary for throwing code
+var result = await ResultExtensions.TryAsync(
+    () => _httpClient.GetFromJsonAsync<User>(url),
+    ex => ex switch
+    {
+        HttpRequestException => Error.ExternalService("API", ex.Message),
+        TimeoutException => Error.ExternalService("API", "Timeout"),
+        _ => Error.Generic(ex.Message)
+    }
+);
+```
+
+#### 8. Name Business Rules Clearly
+
+```csharp
+// ❌ Vague rule names
+Error.BusinessRule("Rule1", "Operation failed")
+
+// ✅ Clear, searchable names
+Error.BusinessRule("MinimumAccountBalance", "Account balance below $100 minimum")
+Error.BusinessRule("MaxDailyWithdrawal", "Withdrawal exceeds $500 daily limit")
+```
+
+#### 9. Document Error Codes
+
+```csharp
+/// <summary>
+/// Creates an order.
+/// </summary>
+/// <returns>
+/// Success: Created order
+/// Failures:
+/// - ValidationError: Invalid order data
+/// - BusinessRuleViolationError.MaxOrderAmount: Exceeds limit
+/// - NotFoundError.Customer: Customer not found
+/// - ConflictError: Order ID already exists
+/// </returns>
+public Result<Order, Error> CreateOrder(OrderDto dto)
+{
+    // Implementation
+}
+```
+
+#### 10. Keep Errors Immutable
+
+```csharp
+// ✅ Errors are immutable - use 'with' or WithMetadata
+var enrichedError = baseError.WithMetadata("RequestId", requestId);
+
+// Not: baseError.Metadata["RequestId"] = requestId; // Doesn't work with records
+```
+
+### Testing Error Scenarios
+
+```csharp
+[Fact]
+public void CreateUser_WhenEmailExists_ReturnsConflictError()
+{
+    // Arrange
+    var dto = new CreateUserDto { Email = "existing@example.com" };
+    _repository.Setup(r => r.EmailExists(dto.Email)).Returns(true);
+
+    // Act
+    var result = _service.CreateUser(dto);
+
+    // Assert
+    Assert.True(result.IsFailure);
+    Assert.IsType<ConflictError>(result.Error);
+    Assert.Equal("Email already in use", result.Error!.Message);
+}
+
+[Fact]
+public void ParseData_WhenInvalidFormat_ReturnsDataFormatError()
+{
+    // Arrange
+    var invalidJson = "{ invalid json }";
+
+    // Act
+    var result = ResultExtensions.Try(
+        () => JsonSerializer.Deserialize<Data>(invalidJson),
+        ex => Error.DataFormat("Data", "JSON", invalidJson)
+    );
+
+    // Assert
+    Assert.True(result.IsFailure);
+    var error = Assert.IsType<DataFormatError>(result.Error);
+    Assert.Equal("Data", error.FieldName);
+}
+```
+
+### Anti-Patterns to Avoid
+
+#### ❌ Using Exceptions for Control Flow
+```csharp
+// Bad
+try
+{
+    var user = GetUser();
+    if (user == null) throw new NotFoundException();
+}
+catch (NotFoundException)
+{
+    return NotFound();
+}
+
+// Good
+return GetUserResult(userId).Match(
+    onSuccess: user => Ok(user),
+    onFailure: error => error switch
+    {
+        NotFoundError => NotFound(),
+        _ => StatusCode(500)
+    }
+);
+```
+
+#### ❌ Ignoring Error Details
+```csharp
+// Bad
+if (result.IsFailure)
+    return Error();
+
+// Good
+if (result.IsFailure)
+    return result.Error switch
+    {
+        ValidationError ve => BadRequest(ve.Errors),
+        NotFoundError => NotFound(),
+        _ => StatusCode(500, result.Error!.Message)
+    };
+```
+
+#### ❌ Creating Custom Errors for Everything
+```csharp
+// Usually unnecessary
+public record CustomPaymentError(string Reason) : Error(Reason, "PAYMENT");
+
+// Better: use existing types with metadata
+Error.ExternalService("PaymentGateway", reason)
+    .WithMetadata("PaymentMethod", "CreditCard")
+    .WithMetadata("Amount", amount);
 ```
 
 ## API Reference
