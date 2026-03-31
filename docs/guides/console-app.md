@@ -353,10 +353,10 @@ Console.WriteLine(result);
 var config = new Dictionary<string, string> { ["Theme"] = "Dark" };
 
 var theme = Option<string>.From(config.TryGetValue("Theme", out var t) ? t : null)
-    .Then(t => t.ToUpper())
+    .Then(t => Option<string>.Some(t.ToUpper()))
     .Match(
-        onSome: value => $"Using theme: {value}",
-        onNone: () => "Using default theme");
+        some: value => $"Using theme: {value}",
+        none: () => "Using default theme");
 
 Console.WriteLine(theme);
 // Output: Using theme: DARK
