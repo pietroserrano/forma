@@ -93,7 +93,7 @@ public abstract class Option<T>
         public override bool IsSome => true;
 
         public override Option<TResult> Then<TResult>(Func<T, Option<TResult>> binder) => binder(_value);
-        public override async Task<Option<TResult>> ThenAsync<TResult>(Func<T, Task<Option<TResult>>> binder) => await binder(_value);
+        public override Task<Option<TResult>> ThenAsync<TResult>(Func<T, Task<Option<TResult>>> binder) => binder(_value);
 
         public override Option<T> Do(Action<T> action)
         {
