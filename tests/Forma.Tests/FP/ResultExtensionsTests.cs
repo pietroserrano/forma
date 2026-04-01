@@ -41,6 +41,13 @@ public class ResultExtensionsTests
         Assert.Equal("Mapped: boom", result.Error!.Message);
     }
 
+    [Fact]
+    public void Try_WithNullFunc_ThrowsArgumentNullException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => ResultExtensions.Try<int>(null!));
+    }
+
     #endregion
 
     #region TryAsync Tests
@@ -90,6 +97,13 @@ public class ResultExtensionsTests
         // Assert
         Assert.False(result.IsSuccess);
         Assert.Equal("Mapped: async boom", result.Error!.Message);
+    }
+
+    [Fact]
+    public async Task TryAsync_WithNullFunc_ThrowsArgumentNullException()
+    {
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() => ResultExtensions.TryAsync<int>(null!));
     }
 
     #endregion
@@ -466,6 +480,77 @@ public class ResultExtensionsTests
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() => Result<string>.Success(null!));
+    }
+
+    #endregion
+
+    #region ValidationError Defensive Copy Tests
+
+    [Fact]
+    public void ValidationError_MutatingSourceDictionary_DoesNotAffectError()
+    {
+        // Arrange
+        var dict = new Dictionary<string, string[]> { ["name"] = ["Too short"] };
+        var error = new ValidationError("Validation", dict);
+
+        // Act – mutate the original dictionary
+        dict["name"] = ["Mutated"];
+        dict["email"] = ["New field"];
+
+        // Assert – error is unchanged
+        Assert.Single(error.Errors);
+        Assert.Contains("name", error.Errors.Keys);
+        Assert.Equal("Too short", error.Errors["name"][0]);
+    }
+
+    [Fact]
+    public void ValidationError_MutatingSourceArray_DoesNotAffectError()
+    {
+        // Arrange
+        var messages = new[] { "Too short" };
+        var dict = new Dictionary<string, string[]> { ["name"] = messages };
+        var error = new ValidationError("Validation", dict);
+
+        // Act – mutate the original array
+        messages[0] = "Mutated";
+
+        // Assert – error is unchanged
+        Assert.Equal("Too short", error.Errors["name"][0]);
+    }
+
+    [Fact]
+    public void ValidationError_WithNullErrors_ThrowsArgumentNullException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() =>
+            new ValidationError("msg", (IReadOnlyDictionary<string, string[]>)null!));
+    }
+
+    #endregion
+
+    #region AggregateError Defensive Copy Tests
+
+    [Fact]
+    public void AggregateError_MutatingSourceList_DoesNotAffectError()
+    {
+        // Arrange
+        var list = new List<Error> { Error.Generic("first") };
+        var error = new AggregateError("Multiple errors", list);
+
+        // Act – mutate the original list
+        list.Add(Error.Generic("second"));
+
+        // Assert – error is unchanged
+        Assert.Single(error.InnerErrors);
+        Assert.Equal("first", error.InnerErrors[0].Message);
+    }
+
+    [Fact]
+    public void AggregateError_WithNullInnerErrors_ThrowsArgumentNullException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() =>
+            new AggregateError("msg", (IReadOnlyList<Error>)null!));
     }
 
     #endregion

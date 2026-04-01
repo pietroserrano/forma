@@ -891,34 +891,33 @@ private Option<string> ValidateDiscountCode(string code)
 Complex validation with accumulation of errors:
 
 ```csharp
-public record ValidationError(string Field, string Message);
 public record UserRegistration(string Username, string Email, string Password);
 
 public Result<UserRegistration> ValidateRegistration(
     string username, string email, string password)
 {
-    var errors = new List<ValidationError>();
+    var fieldErrors = new List<(string Field, string Message)>();
 
     // Validate username
     if (string.IsNullOrWhiteSpace(username))
-        errors.Add(new ValidationError("Username", "Username is required"));
+        fieldErrors.Add(("Username", "Username is required"));
     else if (username.Length < 3)
-        errors.Add(new ValidationError("Username", "Username must be at least 3 characters"));
+        fieldErrors.Add(("Username", "Username must be at least 3 characters"));
 
     // Validate email
     if (string.IsNullOrWhiteSpace(email))
-        errors.Add(new ValidationError("Email", "Email is required"));
+        fieldErrors.Add(("Email", "Email is required"));
     else if (!email.Contains("@"))
-        errors.Add(new ValidationError("Email", "Email must be valid"));
+        fieldErrors.Add(("Email", "Email must be valid"));
 
     // Validate password
     if (string.IsNullOrWhiteSpace(password))
-        errors.Add(new ValidationError("Password", "Password is required"));
+        fieldErrors.Add(("Password", "Password is required"));
     else if (password.Length < 8)
-        errors.Add(new ValidationError("Password", "Password must be at least 8 characters"));
+        fieldErrors.Add(("Password", "Password must be at least 8 characters"));
 
-    return errors.Any()
-        ? Result<UserRegistration>.Failure(errors)
+    return fieldErrors.Count > 0
+        ? Result<UserRegistration>.Failure(Error.Validation(fieldErrors.ToArray()))
         : Result<UserRegistration>.Success(
             new UserRegistration(username, email, password));
 }
@@ -927,7 +926,9 @@ public Result<UserRegistration> ValidateRegistration(
 var result = ValidateRegistration("jo", "invalid-email", "123")
     .Match(
         onSuccess: reg => $"Registration successful for {reg.Username}",
-        onFailure: errors => $"Validation failed:\n{string.Join("\n", errors.Select(e => $"- {e.Field}: {e.Message}"))}"
+        onFailure: error => error is ValidationError ve
+            ? $"Validation failed:\n{string.Join("\n", ve.Errors.Select(e => $"- {e.Key}: {string.Join(", ", e.Value)}"))}"
+            : $"Error: {error.Message}"
     );
 ```
 

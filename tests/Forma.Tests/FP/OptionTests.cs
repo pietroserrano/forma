@@ -18,6 +18,13 @@ public class OptionTests
     }
 
     [Fact]
+    public void Some_WithNull_ThrowsArgumentNullException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => Option<string>.Some(null!));
+    }
+
+    [Fact]
     public void None_CreatesOptionWithoutValue()
     {
         // Arrange & Act

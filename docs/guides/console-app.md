@@ -556,7 +556,7 @@ var invalid = config.GetIntSetting("InvalidNumber")
         onFailure: error => $"Error: {error.Message}"
     );
 Console.WriteLine(invalid);
-// Output: Error: 'abc' is not a valid integer
+// Output: Error: Invalid format for InvalidNumber. Expected integer, got 'abc'
 ```
 
 ### Running the FP Examples

@@ -57,10 +57,10 @@ public abstract record Error(string Message, string Code)
     /// </summary>
     /// <param name="errors">Tuples of field name and error message.</param>
     /// <returns>A ValidationError instance.</returns>
-    public static ValidationError Validation(params (string Field, string Error)[] errors)
+    public static ValidationError Validation(params (string Field, string Message)[] errors)
         => new("Validation failed",
             errors.GroupBy(x => x.Field)
-                  .ToDictionary(g => g.Key, g => g.Select(x => x.Error).ToArray()));
+                  .ToDictionary(g => g.Key, g => g.Select(x => x.Message).ToArray()));
 
     /// <summary>
     /// Creates a validation error from a dictionary of field errors.
@@ -163,12 +163,30 @@ public sealed record GenericError(string Message)
 /// <summary>
 /// Represents a validation error with field-level error messages.
 /// </summary>
-/// <param name="Message">The overall validation error message.</param>
-/// <param name="Errors">Dictionary of field names to their error messages.</param>
-public sealed record ValidationError(
-    string Message, 
-    IReadOnlyDictionary<string, string[]> Errors
-) : Error(Message, "VALIDATION_ERROR");
+public sealed record ValidationError : Error
+{
+    /// <summary>
+    /// Gets the dictionary of field names to their error messages.
+    /// The collection is defensively copied on construction to ensure immutability.
+    /// </summary>
+    public IReadOnlyDictionary<string, string[]> Errors { get; }
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="ValidationError"/>.
+    /// </summary>
+    /// <param name="message">The overall validation error message.</param>
+    /// <param name="errors">Dictionary of field names to their error messages.</param>
+    public ValidationError(string message, IReadOnlyDictionary<string, string[]> errors)
+        : base(message, "VALIDATION_ERROR")
+    {
+        ArgumentNullException.ThrowIfNull(errors);
+        var copied = new Dictionary<string, string[]>(errors.Count);
+        foreach (var kvp in errors)
+            // Defensively copy each array; treat a null entry as an empty array
+            copied[kvp.Key] = kvp.Value is null ? [] : (string[])kvp.Value.Clone();
+        Errors = new System.Collections.ObjectModel.ReadOnlyDictionary<string, string[]>(copied);
+    }
+}
 
 /// <summary>
 /// Represents an error when an entity is not found.
@@ -248,9 +266,23 @@ public sealed record DataFormatError(
 /// <summary>
 /// Represents an aggregate of multiple errors.
 /// </summary>
-/// <param name="Message">The overall error message.</param>
-/// <param name="InnerErrors">The collection of inner errors.</param>
-public sealed record AggregateError(
-    string Message,
-    IReadOnlyList<Error> InnerErrors
-) : Error(Message, "AGGREGATE_ERROR");
+public sealed record AggregateError : Error
+{
+    /// <summary>
+    /// Gets the collection of inner errors.
+    /// The collection is defensively copied on construction to ensure immutability.
+    /// </summary>
+    public IReadOnlyList<Error> InnerErrors { get; }
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="AggregateError"/>.
+    /// </summary>
+    /// <param name="message">The overall error message.</param>
+    /// <param name="innerErrors">The collection of inner errors.</param>
+    public AggregateError(string message, IReadOnlyList<Error> innerErrors)
+        : base(message, "AGGREGATE_ERROR")
+    {
+        ArgumentNullException.ThrowIfNull(innerErrors);
+        InnerErrors = new System.Collections.ObjectModel.ReadOnlyCollection<Error>(new List<Error>(innerErrors));
+    }
+}

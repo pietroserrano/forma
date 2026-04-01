@@ -11,7 +11,11 @@ public abstract class Option<T>
     /// </summary>
     /// <param name="value">The value to wrap in an Option.</param>
     /// <returns>An Option containing the value.</returns>
-    public static Option<T> Some(T value) => new SomeOption(value);
+    public static Option<T> Some(T value)
+    {
+        ArgumentNullException.ThrowIfNull(value);
+        return new SomeOption(value);
+    }
     /// <summary>
     /// Creates an Option with no value.
     /// </summary>

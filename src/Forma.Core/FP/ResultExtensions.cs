@@ -17,6 +17,7 @@ public static class ResultExtensions
         Func<Exception, Error>? errorMapper = null)
         where T : notnull
     {
+        ArgumentNullException.ThrowIfNull(func);
         try
         {
             return Result<T>.Success(func());
@@ -41,6 +42,7 @@ public static class ResultExtensions
         Func<Exception, Error>? errorMapper = null)
         where T : notnull
     {
+        ArgumentNullException.ThrowIfNull(func);
         try
         {
             return Result<T>.Success(await func());

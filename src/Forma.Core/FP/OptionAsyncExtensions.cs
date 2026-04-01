@@ -17,6 +17,8 @@ public static class OptionAsyncExtensions
         this Task<Option<T>> optionTask,
         Func<T, Task<Option<TResult>>> binder)
     {
+        ArgumentNullException.ThrowIfNull(optionTask);
+        ArgumentNullException.ThrowIfNull(binder);
         var option = await optionTask;
         return await option.ThenAsync(binder);
     }
@@ -32,6 +34,8 @@ public static class OptionAsyncExtensions
         this Task<Option<T>> optionTask,
         Func<T, Task> action)
     {
+        ArgumentNullException.ThrowIfNull(optionTask);
+        ArgumentNullException.ThrowIfNull(action);
         var option = await optionTask;
         return await option.DoAsync(action);
     }
@@ -47,6 +51,8 @@ public static class OptionAsyncExtensions
         this Task<Option<T>> optionTask,
         Func<T, Task<bool>> predicate)
     {
+        ArgumentNullException.ThrowIfNull(optionTask);
+        ArgumentNullException.ThrowIfNull(predicate);
         var option = await optionTask;
         return await option.ValidateAsync(predicate);
     }

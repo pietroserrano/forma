@@ -232,4 +232,74 @@ public class OptionAsyncExtensionsTests
     }
 
     #endregion
+
+    #region Null Guard Tests
+
+    [Fact]
+    public async Task ThenAsync_WithNullTask_ThrowsArgumentNullException()
+    {
+        // Arrange
+        Task<Option<int>> nullTask = null!;
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            nullTask.ThenAsync(x => Task.FromResult(Option<int>.Some(x))));
+    }
+
+    [Fact]
+    public async Task ThenAsync_WithNullBinder_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var optionTask = Task.FromResult(Option<int>.Some(5));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            optionTask.ThenAsync((Func<int, Task<Option<int>>>)null!));
+    }
+
+    [Fact]
+    public async Task DoAsync_WithNullTask_ThrowsArgumentNullException()
+    {
+        // Arrange
+        Task<Option<int>> nullTask = null!;
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            nullTask.DoAsync(_ => Task.CompletedTask));
+    }
+
+    [Fact]
+    public async Task DoAsync_WithNullAction_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var optionTask = Task.FromResult(Option<int>.Some(5));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            optionTask.DoAsync((Func<int, Task>)null!));
+    }
+
+    [Fact]
+    public async Task ValidateAsync_WithNullTask_ThrowsArgumentNullException()
+    {
+        // Arrange
+        Task<Option<int>> nullTask = null!;
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            nullTask.ValidateAsync(_ => Task.FromResult(true)));
+    }
+
+    [Fact]
+    public async Task ValidateAsync_WithNullPredicate_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var optionTask = Task.FromResult(Option<int>.Some(5));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            optionTask.ValidateAsync((Func<int, Task<bool>>)null!));
+    }
+
+    #endregion
 }
