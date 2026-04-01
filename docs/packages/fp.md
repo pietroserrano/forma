@@ -153,7 +153,7 @@ All errors inherit from the abstract `Error` record:
 ```csharp
 public abstract record Error(string Message, string Code)
 {
-    public Dictionary<string, object>? Metadata { get; init; }
+    public IReadOnlyDictionary<string, object>? Metadata { get; init; }
 }
 ```
 
