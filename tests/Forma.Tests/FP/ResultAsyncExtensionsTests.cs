@@ -372,6 +372,98 @@ public class ResultAsyncExtensionsTests
 
     #endregion
 
+    #region Null Guard Tests
+
+    [Fact]
+    public async Task DoAsync_WithNullResultTask_ThrowsArgumentNullException()
+    {
+        // Arrange
+        Task<Result<int>> nullTask = null!;
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            nullTask.DoAsync(_ => Task.CompletedTask));
+    }
+
+    [Fact]
+    public async Task DoAsync_WithNullAction_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var resultTask = Task.FromResult(Result<int>.Success(1));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            resultTask.DoAsync((Func<int, Task>)null!));
+    }
+
+    [Fact]
+    public async Task ValidateAsync_WithNullResultTask_ThrowsArgumentNullException()
+    {
+        // Arrange
+        Task<Result<int>> nullTask = null!;
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            nullTask.ValidateAsync(_ => Task.FromResult(true), () => Error.Generic("fail")));
+    }
+
+    [Fact]
+    public async Task ValidateAsync_WithNullPredicate_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var resultTask = Task.FromResult(Result<int>.Success(1));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            resultTask.ValidateAsync(null!, () => Error.Generic("fail")));
+    }
+
+    [Fact]
+    public async Task ValidateAsync_WithNullErrorFactory_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var resultTask = Task.FromResult(Result<int>.Success(1));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            resultTask.ValidateAsync(_ => Task.FromResult(true), (Func<Error>)null!));
+    }
+
+    [Fact]
+    public async Task MatchAsync_WithNullResultTask_ThrowsArgumentNullException()
+    {
+        // Arrange
+        Task<Result<int>> nullTask = null!;
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            nullTask.MatchAsync(v => Task.FromResult(v.ToString()), e => Task.FromResult(e.Message)));
+    }
+
+    [Fact]
+    public async Task MatchAsync_WithNullOnSuccess_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var resultTask = Task.FromResult(Result<int>.Success(1));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            resultTask.MatchAsync((Func<int, Task<string>>)null!, e => Task.FromResult(e.Message)));
+    }
+
+    [Fact]
+    public async Task MatchAsync_WithNullOnFailure_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var resultTask = Task.FromResult(Result<int>.Success(1));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            resultTask.MatchAsync(v => Task.FromResult(v.ToString()), (Func<Error, Task<string>>)null!));
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private static Task<Result<int>> ParseIntAsync(string s)

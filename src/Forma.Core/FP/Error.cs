@@ -14,23 +14,28 @@ public abstract record Error(string Message, string Code)
     private Dictionary<string, object>? _metadata;
 
     /// <summary>
+    /// Cached read-only view over <see cref="_metadata"/> to avoid per-call allocations.
+    /// </summary>
+    private System.Collections.ObjectModel.ReadOnlyDictionary<string, object>? _metadataReadOnly;
+
+    /// <summary>
     /// Optional metadata associated with the error.
     /// Exposed as a read-only view to preserve immutability.
     /// </summary>
     public System.Collections.Generic.IReadOnlyDictionary<string, object>? Metadata
     {
-        get => _metadata is null
-            ? null
-            : new System.Collections.ObjectModel.ReadOnlyDictionary<string, object>(_metadata);
+        get => _metadataReadOnly;
         init
         {
             if (value is null)
             {
                 _metadata = null;
+                _metadataReadOnly = null;
             }
             else
             {
                 _metadata = new Dictionary<string, object>(value);
+                _metadataReadOnly = new System.Collections.ObjectModel.ReadOnlyDictionary<string, object>(_metadata);
             }
         }
     }

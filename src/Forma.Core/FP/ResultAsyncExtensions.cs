@@ -58,6 +58,8 @@ public static class ResultAsyncExtensions
         Func<T, Task> action) 
         where T : notnull
     {
+        ArgumentNullException.ThrowIfNull(resultTask);
+        ArgumentNullException.ThrowIfNull(action);
         var result = await resultTask;
         if (result.IsSuccess)
             await action(result.Value!);
@@ -80,6 +82,9 @@ public static class ResultAsyncExtensions
         Func<Error> errorFactory) 
         where T : notnull
     {
+        ArgumentNullException.ThrowIfNull(resultTask);
+        ArgumentNullException.ThrowIfNull(predicate);
+        ArgumentNullException.ThrowIfNull(errorFactory);
         var result = await resultTask;
         if (!result.IsSuccess)
             return result;
@@ -105,6 +110,9 @@ public static class ResultAsyncExtensions
         Func<Error, Task<TResult>> onFailure) 
         where T : notnull
     {
+        ArgumentNullException.ThrowIfNull(resultTask);
+        ArgumentNullException.ThrowIfNull(onSuccess);
+        ArgumentNullException.ThrowIfNull(onFailure);
         var result = await resultTask;
         return result.IsSuccess
             ? await onSuccess(result.Value!)
