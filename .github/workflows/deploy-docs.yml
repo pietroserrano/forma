@@ -94,20 +94,20 @@ jobs:
           python3 .github/scripts/update_versions.py "$VERSIONS_FILE" "$VERSION"
 
           # Root redirect — sends bare /forma/ visitors to the latest stable docs
-          cat > /tmp/gh-pages/index.html << 'HTMLEOF'
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="refresh" content="0; url=./latest/">
-    <link rel="canonical" href="./latest/">
-    <title>Forma Docs</title>
-  </head>
-  <body>
-    Redirecting to <a href="./latest/">latest documentation</a>...
-  </body>
-</html>
-HTMLEOF
+          {
+            echo '<!DOCTYPE html>'
+            echo '<html>'
+            echo '  <head>'
+            echo '    <meta charset="utf-8">'
+            echo '    <meta http-equiv="refresh" content="0; url=./latest/">'
+            echo '    <link rel="canonical" href="./latest/">'
+            echo '    <title>Forma Docs</title>'
+            echo '  </head>'
+            echo '  <body>'
+            echo '    Redirecting to <a href="./latest/">latest documentation</a>...'
+            echo '  </body>'
+            echo '</html>'
+          } > /tmp/gh-pages/index.html
 
       - name: Save to gh-pages branch (version storage)
         env:
