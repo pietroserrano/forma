@@ -33,14 +33,21 @@ public static class ErrorExtensions
     /// <returns>A combined ValidationError.</returns>
     public static ValidationError Combine(this ValidationError first, ValidationError second)
     {
-        var combined = new Dictionary<string, string[]>(first.Errors);
+        var combined = new Dictionary<string, string[]>(first.Errors.Count);
+
+        // Seed with cloned arrays from the first error to avoid sharing mutable references.
+        foreach (var (key, values) in first.Errors)
+            combined[key] = (string[])values.Clone();
+
+        // Merge in errors from the second error, cloning arrays when adding new keys.
         foreach (var (key, values) in second.Errors)
         {
             if (combined.ContainsKey(key))
                 combined[key] = combined[key].Concat(values).ToArray();
             else
-                combined[key] = values;
+                combined[key] = (string[])values.Clone();
         }
+
         return new ValidationError("Multiple validation errors", combined);
     }
 }

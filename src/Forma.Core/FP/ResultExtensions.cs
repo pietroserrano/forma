@@ -67,6 +67,7 @@ public static class ResultExtensions
         Func<Error, T?> recovery)
         where T : notnull
     {
+        ArgumentNullException.ThrowIfNull(recovery);
         if (result.IsSuccess) return result;
 
         var recovered = recovery(result.Error!);
@@ -104,6 +105,7 @@ public static class ResultExtensions
         Func<Result<T>> alternative)
         where T : notnull
     {
+        ArgumentNullException.ThrowIfNull(alternative);
         return result.IsSuccess ? result : alternative();
     }
 

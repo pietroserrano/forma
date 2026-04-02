@@ -152,6 +152,17 @@ public class ResultExtensionsTests
         Assert.Equal("error", recovered.Error!.Message);
     }
 
+    [Fact]
+    public void Recover_WithNullRecovery_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var result = Result<int>.Failure(Error.Generic("error"));
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() =>
+            ResultExtensions.Recover<int>(result, null!));
+    }
+
     #endregion
 
     #region OrElse Tests
@@ -220,6 +231,17 @@ public class ResultExtensionsTests
         // Assert
         Assert.True(orElse.IsSuccess);
         Assert.Equal(99, orElse.Value);
+    }
+
+    [Fact]
+    public void OrElseTry_WithNullAlternative_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var result = Result<int>.Failure(Error.Generic("error"));
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() =>
+            result.OrElseTry((Func<Result<int>>)null!));
     }
 
     #endregion
@@ -551,6 +573,44 @@ public class ResultExtensionsTests
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
             new AggregateError("msg", (IReadOnlyList<Error>)null!));
+    }
+
+    #endregion
+
+    #region ValidationError Combine Array Clone Tests
+
+    [Fact]
+    public void ValidationErrorCombine_MutatingSourceArrayAfterCombine_DoesNotAffectCombinedError()
+    {
+        // Arrange
+        var messages1 = new[] { "Too short" };
+        var first = new ValidationError("first", new Dictionary<string, string[]> { ["name"] = messages1 });
+        var second = new ValidationError("second", new Dictionary<string, string[]> { ["email"] = new[] { "Invalid" } });
+
+        // Act
+        var combined = first.Combine(second);
+
+        // Mutate the original source array
+        messages1[0] = "Mutated";
+
+        // Assert – combined error is unaffected
+        Assert.Equal("Too short", combined.Errors["name"][0]);
+    }
+
+    [Fact]
+    public void ValidationErrorCombine_SharedKey_MergesWithoutSharingArrayReference()
+    {
+        // Arrange
+        var first = new ValidationError("first", new Dictionary<string, string[]> { ["name"] = new[] { "Too short" } });
+        var second = new ValidationError("second", new Dictionary<string, string[]> { ["name"] = new[] { "Invalid chars" } });
+
+        // Act
+        var combined = first.Combine(second);
+
+        // Assert – both messages accumulated
+        Assert.Equal(2, combined.Errors["name"].Length);
+        Assert.Contains("Too short", combined.Errors["name"]);
+        Assert.Contains("Invalid chars", combined.Errors["name"]);
     }
 
     #endregion

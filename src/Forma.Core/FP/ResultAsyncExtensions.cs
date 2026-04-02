@@ -39,6 +39,7 @@ public static class ResultAsyncExtensions
         where T : notnull
         where TNext : notnull
     {
+        ArgumentNullException.ThrowIfNull(next);
         if (!result.IsSuccess)
             return Result<TNext>.Failure(result.Error!);
 

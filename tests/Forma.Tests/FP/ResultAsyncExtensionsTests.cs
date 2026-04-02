@@ -464,6 +464,21 @@ public class ResultAsyncExtensionsTests
 
     #endregion
 
+    #region ThenAsync Null Guard Tests
+
+    [Fact]
+    public async Task ThenAsync_WithNullNext_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var result = Result<int>.Success(1);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentNullException>(() =>
+            result.ThenAsync((Func<int, Task<Result<string>>>)null!));
+    }
+
+    #endregion
+
     #region Helper Methods
 
     private static Task<Result<int>> ParseIntAsync(string s)
