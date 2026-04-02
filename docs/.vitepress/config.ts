@@ -23,6 +23,7 @@ export default defineConfig({
         text: 'Packages',
         items: [
           { text: 'Forma.Core', link: '/packages/core' },
+          { text: 'Forma.Core.FP', link: '/packages/fp' },
           { text: 'Forma.Mediator', link: '/packages/mediator' },
           { text: 'Forma.Decorator', link: '/packages/decorator' },
           { text: 'Forma.Chains', link: '/packages/chains' },
@@ -55,6 +56,7 @@ export default defineConfig({
         text: 'Packages',
         items: [
           { text: 'Forma.Core', link: '/packages/core' },
+          { text: 'Forma.Core.FP', link: '/packages/fp' },
           { text: 'Forma.Mediator', link: '/packages/mediator' },
           { text: 'Forma.Decorator', link: '/packages/decorator' },
           { text: 'Forma.Chains', link: '/packages/chains' },

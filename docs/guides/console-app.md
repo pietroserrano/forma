@@ -327,6 +327,248 @@ public class OrderCreationHandler : IChainHandler<OrderRequest, OrderResponse>
 
 ---
 
+## Functional Programming in a Console App
+
+### Basic Result and Option Usage
+
+```csharp
+using Forma.Core.FP;
+
+// ── Result: Railway-Oriented Programming ────────────────────────────────────
+
+// Simple success/failure pipeline
+var result = Result<int>.Success(10)
+    .Then(x => Result<int>.Success(x * 2))
+    .Then(x => x > 15 ? Result<int>.Success(x) : Result<int>.Failure(Error.BusinessRule("TooSmall", "Too small")))
+    .Then(x => Result<int>.Success(x + 5))
+    .Match(
+        onSuccess: value => $"Final value: {value}",
+        onFailure: error => $"Error: {error.Message}");
+
+Console.WriteLine(result);
+// Output: Final value: 25
+
+// ── Option: Safe null handling ───────────────────────────────────────────────
+
+var config = new Dictionary<string, string> { ["Theme"] = "Dark" };
+
+var theme = Option<string>.From(config.TryGetValue("Theme", out var t) ? t : null)
+    .Then(t => Option<string>.Some(t.ToUpper()))
+    .Match(
+        some: value => $"Using theme: {value}",
+        none: () => "Using default theme");
+
+Console.WriteLine(theme);
+// Output: Using theme: DARK
+```
+
+### Form Validation with Result
+
+```csharp
+using Forma.Core.FP;
+using System.Text.RegularExpressions;
+
+public record RegisterUserRequest(string Username, string Email, int Age);
+public record User(string Username, string Email, int Age);
+
+public class UserRegistrationService
+{
+    public Result<User> RegisterUser(RegisterUserRequest request)
+    {
+        return ValidateUsername(request.Username)
+            .Then(_ => ValidateEmail(request.Email))
+            .Then(_ => ValidateAge(request.Age))
+            .Then(_ => Result<User>.Success(new User(request.Username, request.Email, request.Age)));
+    }
+
+    private Result<string> ValidateUsername(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+            return Result<string>.Failure(Error.Validation("username", "Username is required."));
+        if (username.Length < 3)
+            return Result<string>.Failure(Error.Validation("username", "Username must be at least 3 characters."));
+        return Result<string>.Success(username);
+    }
+
+    private Result<string> ValidateEmail(string email)
+    {
+        if (!email.Contains('@'))
+            return Result<string>.Failure(Error.Validation("email", "Invalid email address."));
+        return Result<string>.Success(email);
+    }
+
+    private Result<int> ValidateAge(int age)
+    {
+        if (age < 18)
+            return Result<int>.Failure(Error.Validation("age", "Must be at least 18 years old."));
+        return Result<int>.Success(age);
+    }
+}
+
+// Usage
+var service = new UserRegistrationService();
+
+var request1 = new RegisterUserRequest("john", "john@example.com", 25);
+var result1 = service.RegisterUser(request1);
+Console.WriteLine(result1.Match(
+    onSuccess: user => $"✓ User '{user.Username}' registered successfully!",
+    onFailure: error => $"✗ Registration failed: {error.Message}"
+));
+// Output: ✓ User 'john' registered successfully!
+
+var request2 = new RegisterUserRequest("jane", "invalid-email", 25);
+var result2 = service.RegisterUser(request2);
+Console.WriteLine(result2.Match(
+    onSuccess: user => $"✓ User '{user.Username}' registered successfully!",
+    onFailure: error => $"✗ Registration failed: {error.Message}"
+));
+// Output: ✗ Registration failed: Invalid email address.
+```
+
+### File Operations with Result
+
+```csharp
+using Forma.Core.FP;
+
+public class FileService
+{
+    public Result<string> ReadFile(string path)
+    {
+        try
+        {
+            if (!File.Exists(path))
+                return Result<string>.Failure(Error.Generic($"File not found: {path}"));
+            
+            var content = File.ReadAllText(path);
+            return Result<string>.Success(content);
+        }
+        catch (Exception ex)
+        {
+            return Result<string>.Failure(Error.Generic($"Error reading file: {ex.Message}"));
+        }
+    }
+
+    public Result<int> WriteFile(string path, string content)
+    {
+        try
+        {
+            File.WriteAllText(path, content);
+            return Result<int>.Success(content.Length);
+        }
+        catch (Exception ex)
+        {
+            return Result<int>.Failure(Error.Generic($"Error writing file: {ex.Message}"));
+        }
+    }
+
+    public Result<string> ProcessFile(string inputPath, string outputPath)
+    {
+        return ReadFile(inputPath)
+            .Then(content => Result<string>.Success(content.ToUpper()))
+            .Do(processedContent => Console.WriteLine($"Processed {processedContent.Length} characters"))
+            .Then(processedContent => 
+                WriteFile(outputPath, processedContent)
+                    .Then(_ => processedContent));
+    }
+}
+
+// Usage
+var fileService = new FileService();
+
+var result = fileService.ProcessFile("input.txt", "output.txt")
+    .Match(
+        onSuccess: content => $"✓ File processed successfully: {content.Length} bytes",
+        onFailure: error => $"✗ Processing failed: {error.Message}"
+    );
+
+Console.WriteLine(result);
+```
+
+### Configuration Management with Option
+
+```csharp
+using Forma.Core.FP;
+
+public class AppConfiguration
+{
+    private readonly Dictionary<string, string> _settings = new();
+
+    public Option<string> GetSetting(string key)
+    {
+        return _settings.TryGetValue(key, out var value)
+            ? Option<string>.Some(value)
+            : Option<string>.None();
+    }
+
+    public void SetSetting(string key, string value) => _settings[key] = value;
+
+    public string GetRequiredSetting(string key, string defaultValue)
+    {
+        return GetSetting(key).Match(
+            some: value => value,
+            none: () => defaultValue
+        );
+    }
+
+    public Result<int> GetIntSetting(string key)
+    {
+        return GetSetting(key)
+            .Match(
+                some: value => int.TryParse(value, out var intValue)
+                    ? Result<int>.Success(intValue)
+                    : Result<int>.Failure(Error.DataFormat(key, "integer", value)),
+                none: () => Result<int>.Failure(Error.Generic($"Setting '{key}' not found"))
+            );
+    }
+}
+
+// Usage
+var config = new AppConfiguration();
+config.SetSetting("MaxRetries", "3");
+config.SetSetting("InvalidNumber", "abc");
+
+// Get optional setting
+var theme = config.GetSetting("Theme")
+    .Match(
+        some: v => $"Theme: {v}",
+        none: () => "Theme: default"
+    );
+Console.WriteLine(theme);
+// Output: Theme: default
+
+// Get required setting with default
+var timeout = config.GetRequiredSetting("Timeout", "30");
+Console.WriteLine($"Timeout: {timeout}");
+// Output: Timeout: 30
+
+// Parse integer setting
+var maxRetries = config.GetIntSetting("MaxRetries")
+    .Match(
+        onSuccess: value => $"Max retries: {value}",
+        onFailure: error => $"Error: {error.Message}"
+    );
+Console.WriteLine(maxRetries);
+// Output: Max retries: 3
+
+var invalid = config.GetIntSetting("InvalidNumber")
+    .Match(
+        onSuccess: value => $"Value: {value}",
+        onFailure: error => $"Error: {error.Message}"
+    );
+Console.WriteLine(invalid);
+// Output: Error: Invalid format for InvalidNumber. Expected integer, got 'abc'
+```
+
+### Running the FP Examples
+
+The repository contains a ready-to-run FP example project:
+
+```bash
+dotnet run --project examples/console/Forma.Examples.Console.FP
+```
+
+---
+
 ## Complete Integration Example
 
 The following example combines **Mediator + Decorator + Chains** in a single e-commerce console application using `Microsoft.Extensions.Hosting`:
@@ -402,4 +644,5 @@ dotnet run --project examples/console/Forma.Examples.Console.DependencyInjection
 - [Forma.Mediator docs](/packages/mediator)
 - [Forma.Decorator docs](/packages/decorator)
 - [Forma.Chains docs](/packages/chains)
+- [Forma.Core FP docs](/packages/fp)
 - [Web API Guide](/guides/web-api)
