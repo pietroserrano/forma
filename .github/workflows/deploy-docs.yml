@@ -4,27 +4,42 @@ on:
   push:
     branches:
       - main
+      - develop
+      - 'release/v*'
     paths:
       - 'docs/**'
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
+# Serialize all deployments to prevent race conditions on the gh-pages branch
 concurrency:
-  group: pages
+  group: deploy-gh-pages
   cancel-in-progress: false
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          if [[ "$BRANCH" == release/v* ]]; then
+            VERSION="${BRANCH#release/}"
+          elif [[ "$BRANCH" == "develop" ]]; then
+            VERSION="dev"
+          else
+            VERSION="latest"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Deploying docs for version: $VERSION"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -33,9 +48,6 @@ jobs:
           cache: npm
           cache-dependency-path: docs/package-lock.json
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
       - name: Install dependencies
         run: npm ci
         working-directory: docs
@@ -43,20 +55,68 @@ jobs:
       - name: Build documentation
         run: npm run build
         working-directory: docs
+        env:
+          DOCS_VERSION: ${{ steps.version.outputs.version }}
+          DOCS_BASE: /forma/${{ steps.version.outputs.version }}/
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs/.vitepress/dist
+      - name: Prepare deployment
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p /tmp/gh-pages
 
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    needs: build
-    runs-on: ubuntu-latest
-    name: Deploy
-    steps:
+          # Restore existing gh-pages content if the branch already exists
+          git fetch origin gh-pages 2>/dev/null || true
+          if git show-ref --verify --quiet refs/remotes/origin/gh-pages; then
+            git archive origin/gh-pages | tar -x -C /tmp/gh-pages
+            echo "Restored existing gh-pages content"
+          else
+            echo "Starting fresh gh-pages deployment"
+          fi
+
+          # Copy built docs into version subdirectory
+          mkdir -p /tmp/gh-pages/$VERSION
+          rsync -a --delete docs/.vitepress/dist/ /tmp/gh-pages/$VERSION/
+
+          # Initialize versions.json if missing
+          VERSIONS_FILE="/tmp/gh-pages/versions.json"
+          [ -f "$VERSIONS_FILE" ] || echo '[]' > "$VERSIONS_FILE"
+
+          # Register the current version in versions.json
+          python3 .github/scripts/update_versions.py "$VERSIONS_FILE" "$VERSION"
+
+          # Root redirect — sends bare /forma/ visitors to the latest stable docs
+          cat > /tmp/gh-pages/index.html << 'HTMLEOF'
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <meta http-equiv="refresh" content="0; url=./latest/">
+              <link rel="canonical" href="./latest/">
+              <title>Forma Docs</title>
+            </head>
+            <body>
+              Redirecting to <a href="./latest/">latest documentation</a>...
+            </body>
+          </html>
+          HTMLEOF
+
       - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd /tmp/gh-pages
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to deploy for $VERSION"
+          else
+            git commit -m "docs: deploy $VERSION [skip ci]"
+            git push --force \
+              "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+              HEAD:gh-pages
+            echo "Successfully deployed $VERSION"
+          fi

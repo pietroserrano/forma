@@ -1,13 +1,15 @@
 import { defineConfig } from 'vitepress'
 
+const DOCS_BASE = process.env.DOCS_BASE ?? '/forma/'
+
 export default defineConfig({
   title: 'Forma',
   description: 'Lightweight and modular .NET library for behavioral design patterns',
   lang: 'en-US',
-  base: '/forma/',
+  base: DOCS_BASE,
 
   head: [
-    ['link', { rel: 'icon', href: '/forma/favicon.svg', type: 'image/svg+xml' }],
+    ['link', { rel: 'icon', href: `${DOCS_BASE}favicon.svg`, type: 'image/svg+xml' }],
     ['meta', { name: 'theme-color', content: '#5D87E8' }],
     ['meta', { name: 'og:type', content: 'website' }],
     ['meta', { name: 'og:site_name', content: 'Forma Docs' }],
