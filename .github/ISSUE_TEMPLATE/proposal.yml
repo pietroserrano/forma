@@ -1,0 +1,19 @@
+name: Proposal
+description: Propose a new pattern or module
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+  - type: textarea
+    id: impact
+    attributes:
+      label: API Impact
