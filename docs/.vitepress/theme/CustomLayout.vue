@@ -10,6 +10,9 @@ const { Layout } = DefaultTheme
     <template #nav-bar-content-after>
       <VersionSwitcher />
     </template>
+    <template #nav-screen-content-after>
+      <VersionSwitcher class="vp-nav-screen-version-switcher" />
+    </template>
     <template #home-hero-before>
       <section class="fh">
         <!-- ── Animated background ───────────────────── -->

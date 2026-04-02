@@ -12,15 +12,20 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
-# Serialize all deployments to prevent race conditions on the gh-pages branch
+# Serialize all deployments to prevent race conditions
 concurrency:
-  group: deploy-gh-pages
+  group: pages
   cancel-in-progress: false
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -74,6 +79,9 @@ jobs:
             echo "Starting fresh gh-pages deployment"
           fi
 
+          # Ensure .nojekyll exists to prevent Jekyll from interfering with the static site
+          touch /tmp/gh-pages/.nojekyll
+
           # Copy built docs into version subdirectory
           mkdir -p /tmp/gh-pages/$VERSION
           rsync -a --delete docs/.vitepress/dist/ /tmp/gh-pages/$VERSION/
@@ -87,21 +95,21 @@ jobs:
 
           # Root redirect — sends bare /forma/ visitors to the latest stable docs
           cat > /tmp/gh-pages/index.html << 'HTMLEOF'
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8">
-              <meta http-equiv="refresh" content="0; url=./latest/">
-              <link rel="canonical" href="./latest/">
-              <title>Forma Docs</title>
-            </head>
-            <body>
-              Redirecting to <a href="./latest/">latest documentation</a>...
-            </body>
-          </html>
-          HTMLEOF
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="refresh" content="0; url=./latest/">
+    <link rel="canonical" href="./latest/">
+    <title>Forma Docs</title>
+  </head>
+  <body>
+    Redirecting to <a href="./latest/">latest documentation</a>...
+  </body>
+</html>
+HTMLEOF
 
-      - name: Deploy to GitHub Pages
+      - name: Save to gh-pages branch (version storage)
         env:
           VERSION: ${{ steps.version.outputs.version }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -112,11 +120,20 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
           if git diff --cached --quiet; then
-            echo "No changes to deploy for $VERSION"
+            echo "No changes to save for $VERSION"
           else
-            git commit -m "docs: deploy $VERSION [skip ci]"
+            git commit -m "docs: save $VERSION [skip ci]"
             git push --force \
               "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
               HEAD:gh-pages
-            echo "Successfully deployed $VERSION"
+            echo "Saved $VERSION to gh-pages branch"
           fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: /tmp/gh-pages
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

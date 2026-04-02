@@ -685,3 +685,19 @@
     display: none;
   }
 }
+
+/* VersionSwitcher in the mobile screen menu */
+.vp-nav-screen-version-switcher {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .vp-nav-screen-version-switcher {
+    display: inline-flex;
+    width: 100%;
+    margin-left: 0;
+    margin-top: 12px;
+    height: 40px;
+    font-size: 0.9rem;
+  }
+}
