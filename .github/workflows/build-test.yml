@@ -5,11 +5,16 @@ on:
     branches: [ main, develop, 'release_v*' ]
     paths:
       - 'src/**'
+      - 'docs/**'
   pull_request:
     branches: [ main, develop, 'release_v*' ]
     paths:
       - 'src/**'
+      - 'docs/**'
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -33,3 +38,27 @@ jobs:
       
     - name: Test
       run: dotnet test --no-build --verbosity normal
+
+  docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: docs
+
+      - name: Build documentation
+        run: npm run build
+        working-directory: docs
