@@ -1,5 +1,6 @@
 name: Proposal
 description: Propose a new pattern or module
+labels: ["type:proposal", "status:needs-design", "needs-rfc"]
 body:
   - type: textarea
     id: problem
