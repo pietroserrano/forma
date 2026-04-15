@@ -1,0 +1,12 @@
+[
+  {
+    "version": "v2.1",
+    "label": "v2.1 (stable)",
+    "url": "/forma/v2.1/"
+  },
+  {
+    "version": "latest",
+    "label": "latest",
+    "url": "/forma/latest/"
+  }
+]
