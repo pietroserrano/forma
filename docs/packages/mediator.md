@@ -115,15 +115,15 @@ Pipeline behaviors wrap handler execution and are ideal for cross-cutting concer
 ```csharp
 public class TimingBehavior<TRequest, TResponse>
     : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
+    where TRequest : notnull
 {
     public async Task<TResponse> HandleAsync(
         TRequest request,
-        RequestHandlerDelegate<TResponse> next,
-        CancellationToken ct = default)
+        CancellationToken cancellationToken,
+        Func<CancellationToken, Task<TResponse>> next)
     {
         var sw = Stopwatch.StartNew();
-        var response = await next(ct);
+        var response = await next(cancellationToken);
         sw.Stop();
         Console.WriteLine($"{typeof(TRequest).Name} took {sw.ElapsedMilliseconds} ms");
         return response;
@@ -131,15 +131,45 @@ public class TimingBehavior<TRequest, TResponse>
 }
 ```
 
-Register behaviors when configuring the mediator:
+### Open Behaviors
+
+Use `AddOpenBehavior` to register an **open generic** behavior (one that applies to all request types):
 
 ```csharp
 services.AddRequestMediator(config =>
 {
     config.RegisterServicesFromAssemblies(typeof(Program).Assembly);
     // Behaviors execute in the order they are registered
-    config.AddBehavior(typeof(TimingBehavior<,>));
-    config.AddBehavior(typeof(ValidationBehavior<,>));
+    config.AddOpenBehavior(typeof(TimingBehavior<,>));
+    config.AddOpenBehavior(typeof(ValidationBehavior<,>));
+});
+```
+
+### Closed Behaviors
+
+Use `AddBehavior` to register a **closed** behavior (one that is bound to specific request/response types):
+
+```csharp
+// Closed behavior: applies only to CreateUserCommand/Unit
+public class CreateUserAuditBehavior
+    : IPipelineBehavior<CreateUserCommand, Unit>
+{
+    public async Task<Unit> HandleAsync(
+        CreateUserCommand request,
+        CancellationToken cancellationToken,
+        Func<CancellationToken, Task<Unit>> next)
+    {
+        Console.WriteLine($"[AUDIT] Before handling {nameof(CreateUserCommand)}");
+        var response = await next(cancellationToken);
+        Console.WriteLine($"[AUDIT] After handling {nameof(CreateUserCommand)}");
+        return response;
+    }
+}
+
+services.AddRequestMediator(config =>
+{
+    config.RegisterServicesFromAssemblies(typeof(Program).Assembly);
+    config.AddBehavior<CreateUserAuditBehavior>();
 });
 ```
 
